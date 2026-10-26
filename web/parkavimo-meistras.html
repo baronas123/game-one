@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="lt">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Parkavimo meistras</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Parkavimas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: naktinė aikštelė. Žaidimo pasaulis piešiamas drobėje per visą ekraną; viršuje – prietaisų skydelis, apačioje – vairas ir pedalai. Sąmoningai viena tamsi tema. */
+:root {
+  --night: #12151a;
+  --night-2: #1b2027;
+  --panel: rgba(16,19,24,.82);
+  --line: rgba(255,255,255,.14);
+  --paint: #f4f2ea;
+  --muted: rgba(244,242,234,.62);
+  --taxi: #ffc21a;
+  --go: #3ddc84;
+  --stop: #ff4d4d;
+  --sky: #4cc3ff;
+  --font-display: "Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--night); color: var(--paint); font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent; overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none;
+}
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+button:focus-visible { outline: 2px solid var(--taxi); outline-offset: 2px; }
+
+/* ---------- Meniu ---------- */
+#menu { min-height: 100%; background:
+  radial-gradient(120% 60% at 50% 0%, #26303c 0%, transparent 60%), var(--night); }
+.menu-in {
+  max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;
+  padding-block: 18px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+#hero { width: 100%; aspect-ratio: 16 / 7; max-width: 100%; border-radius: 14px; display: block; background: #2a2e34; }
+.eyebrow { font: 700 12px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--taxi); }
+h1 { margin: 6px 0 0; font: 700 clamp(40px, 11vw, 58px)/.95 var(--font-display); text-transform: uppercase; letter-spacing: .01em; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.5; max-width: 60ch; }
+.levels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 560px) { .levels { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.lv {
+  text-align: left; padding: 12px 12px 10px; border-radius: 12px; background: var(--night-2);
+  border: 1px solid var(--line); display: grid; gap: 4px; min-width: 0; position: relative;
+}
+.lv .n { font: 700 12px/1 var(--font-mono); color: var(--taxi); letter-spacing: .08em; }
+.lv .nm { font: 700 17px/1.15 var(--font-display); text-transform: uppercase; }
+.lv .pl { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv .st { font-size: 15px; color: var(--taxi); letter-spacing: .12em; min-height: 18px; }
+.lv .st .off { color: rgba(255,255,255,.18); }
+.lv[disabled] { opacity: .42; cursor: not-allowed; }
+.lv[disabled] .st::before { content: "UŽRAKINTA"; font: 700 11px var(--font-mono); letter-spacing: .1em; color: var(--muted); }
+.lv.next { border-color: var(--taxi); box-shadow: 0 0 0 1px var(--taxi) inset; }
+.opts { display: grid; gap: 10px; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--night-2); }
+.opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.opt .lbl { display: grid; gap: 2px; min-width: 0; }
+.opt .lbl b { font: 700 15px var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.opt .lbl small { color: var(--muted); font-size: 13px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; flex: none; }
+.seg button { padding: 7px 12px; border-radius: 999px; font: 600 13px var(--font-body); color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--taxi); color: #1a1405; }
+.hint { font-size: 12px; color: var(--stop); min-height: 0; }
+.keys { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.keys kbd { font: 600 12px var(--font-mono); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); background: var(--night-2); color: var(--paint); }
+
+/* ---------- Žaidimas ---------- */
+#game { position: fixed; inset: 0; overflow: hidden; touch-action: none; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.hud {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px); padding-bottom: 8px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
+  background: linear-gradient(var(--panel), rgba(16,19,24,0));
+}
+.rb { width: 40px; height: 40px; flex: none; border-radius: 50%; background: rgba(255,255,255,.1); border: 1px solid var(--line); display: grid; place-items: center; font: 700 16px var(--font-mono); }
+.hud .meta { flex: 1; min-width: 0; }
+.hud .t { font: 700 18px/1.05 var(--font-display); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud .s { font: 500 12px/1.3 var(--font-body); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gauge { display: grid; justify-items: end; gap: 2px; font: 700 15px/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.gauge small { font: 600 11px var(--font-mono); color: var(--muted); }
+.gauge .sc { color: var(--stop); }
+.banner {
+  position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%); z-index: 4; text-align: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; width: min(86vw, 360px);
+  transition: opacity .4s ease; pointer-events: none;
+}
+.banner b { display: block; font: 700 22px/1.1 var(--font-display); text-transform: uppercase; color: var(--taxi); }
+.banner span { display: block; margin-top: 6px; font-size: 15px; line-height: 1.4; color: var(--paint); }
+.toast { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); z-index: 4; background: var(--stop); color: #fff;
+  font: 700 14px var(--font-display); text-transform: uppercase; padding: 6px 12px; border-radius: 999px; pointer-events: none; transition: opacity .3s; }
+
+/* Galinio vaizdo kamera */
+.cam {
+  position: absolute; z-index: 3; left: 50%; transform: translateX(-50%);
+  top: calc(env(safe-area-inset-top, 0px) + 62px);
+  width: min(58vw, 250px); aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden;
+  border: 2px solid #2b3139; background: #0b0d10; box-shadow: 0 10px 30px rgba(0,0,0,.55);
+}
+.cam video, .cam canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam .tag { position: absolute; left: 8px; top: 6px; font: 700 11px var(--font-mono); color: var(--paint); letter-spacing: .08em; text-shadow: 0 1px 2px #000; }
+.cam .tag i { font-style: normal; color: var(--stop); }
+
+/* Valdymas */
+.controls {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: flex-end; justify-content: space-between; gap: 8px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); padding-top: 12px;
+  padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px));
+  background: linear-gradient(rgba(16,19,24,0), var(--panel) 40%);
+}
+.wheelzone { position: relative; width: clamp(112px, 32vw, 150px); aspect-ratio: 1; max-width: 100%; flex: none; touch-action: none; }
+#wheel { width: 100%; height: 100%; display: block; transition: transform .05s linear; }
+.wheelzone .mode { position: absolute; left: 0; right: 0; bottom: -2px; text-align: center; font: 700 10px var(--font-mono); letter-spacing: .1em; color: var(--muted); pointer-events: none; }
+.pedals { display: flex; align-items: flex-end; gap: 10px; flex: none; }
+.pedal {
+  touch-action: none; border-radius: 14px; display: grid; place-items: center; align-content: center; gap: 4px;
+  font: 700 22px var(--font-display); color: #e9e9e9; border: 1px solid rgba(255,255,255,.18);
+  background: repeating-linear-gradient(180deg, #3a3f47 0 7px, #2a2e35 7px 12px);
+  box-shadow: 0 6px 0 #111, inset 0 1px 0 rgba(255,255,255,.2); transition: transform .06s, box-shadow .06s;
+}
+.pedal small { font: 600 10px var(--font-mono); letter-spacing: .08em; color: var(--muted); }
+.pedal.on { transform: translateY(5px) scaleY(.96); box-shadow: 0 1px 0 #111, inset 0 1px 0 rgba(255,255,255,.2); }
+#pedR { width: clamp(58px, 16vw, 74px); height: 92px; }
+#pedR.on { color: var(--stop); }
+#pedD { width: clamp(66px, 19vw, 86px); height: 132px; }
+#pedD.on { color: var(--go); }
+.gear { font: 700 11px var(--font-mono); text-align: center; color: var(--muted); flex: none; }
+.gear b { color: var(--taxi); font-size: 18px; }
+
+/* Pergalė */
+#win { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; background: rgba(6,8,12,.6);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px; }
+.card { width: 100%; max-width: 380px; background: #1b2027; border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: grid; gap: 14px; text-align: center; animation: pop .45s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes pop { from { transform: scale(.8); opacity: 0; } }
+.card h2 { margin: 0; font: 700 30px/1 var(--font-display); text-transform: uppercase; color: var(--taxi); }
+.card p { margin: 0; color: var(--muted); }
+.bigst { font-size: 40px; letter-spacing: .18em; color: var(--taxi); }
+.bigst span { display: inline-block; animation: star .5s cubic-bezier(.2,1.6,.4,1) both; }
+.bigst span:nth-child(2) { animation-delay: .25s; } .bigst span:nth-child(3) { animation-delay: .5s; }
+.bigst .off { color: rgba(255,255,255,.16); }
+@keyframes star { from { transform: scale(0) rotate(-40deg); } }
+.stats { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.chip { font: 600 13px var(--font-mono); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.btn { padding: 14px; border-radius: 12px; font: 700 17px var(--font-display); text-transform: uppercase; letter-spacing: .03em; background: var(--taxi); color: #1a1405; }
+.btn.ghost { background: transparent; color: var(--paint); border: 1px solid var(--line); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (prefers-reduced-motion: reduce) { .card, .bigst span { animation: none; } .pedal { transition: none; } }
+</style>
+
+<div id="menu">
+  <div class="menu-in">
+    <canvas id="hero" aria-hidden="true"></canvas>
+    <div>
+      <span class="eyebrow">Arkada · 12 aikštelių</span>
+      <h1>Parkavimo meistras</h1>
+    </div>
+    <p class="lead">Nuo vairavimo mokyklos aikštelės iki Gedimino prospekto ir požeminio garažo. Įvažiuok į švytinčią vietą, sustok tiesiai ir nekliudyk kaimynų.</p>
+    <div class="levels" id="levels"></div>
+    <section class="opts" aria-label="Nustatymai">
+      <div class="opt">
+        <div class="lbl"><b>Vairas</b><small>Polinkis: sukite telefoną kaip vairą</small></div>
+        <div class="seg" role="group" aria-label="Vairavimo būdas">
+          <button type="button" id="steerTouch" aria-pressed="true">Mygtukai</button>
+          <button type="button" id="steerTilt" aria-pressed="false">Polinkis</button>
+        </div>
+      </div>
+      <div class="hint" id="tiltHint" hidden>Jutikliai šioje naršyklėje nepasiekiami</div>
+      <div class="opt">
+        <div class="lbl"><b>AR režimas</b><small>Galinio vaizdo kameroje – tikras telefono kameros vaizdas</small></div>
+        <div class="seg" role="group" aria-label="AR režimas">
+          <button type="button" id="arOff" aria-pressed="true">Išj.</button>
+          <button type="button" id="arOn" aria-pressed="false">Įj.</button>
+        </div>
+      </div>
+      <div class="hint" id="arHint" hidden>Kamera šioje naršyklėje nepasiekiama</div>
+      <div class="opt">
+        <div class="lbl"><b>Garsas</b><small>Variklis, parkavimo davikliai</small></div>
+        <div class="seg" role="group" aria-label="Garsas">
+          <button type="button" id="sndOn" aria-pressed="true">Įj.</button>
+          <button type="button" id="sndOff" aria-pressed="false">Išj.</button>
+        </div>
+      </div>
+    </section>
+    <p class="keys">Kompiuteryje: <kbd>↑</kbd>/<kbd>W</kbd> – važiuoti, <kbd>↓</kbd>/<kbd>S</kbd> – stabdyti ir atbulinė, <kbd>←</kbd><kbd>→</kbd> – vairuoti, <kbd>Tarpas</kbd> – rankinis, <kbd>R</kbd> – iš naujo.</p>
+  </div>
+</div>
+
+<div id="game" hidden>
+  <canvas id="cv" aria-label="Parkavimo aikštelė"></canvas>
+  <div class="hud">
+    <button class="rb" id="btnBack" type="button" aria-label="Atgal į meniu">‹</button>
+    <div class="meta"><div class="t" id="hName">—</div><div class="s" id="hPlace">—</div></div>
+    <div class="gauge"><span id="hTime">0,0 s</span><small>Įbrėžimai <span class="sc" id="hScr">0</span></small></div>
+    <button class="rb" id="btnRetry" type="button" aria-label="Pradėti iš naujo">↺</button>
+  </div>
+  <div class="banner" id="banner"><b id="bName">—</b><span id="bTip">—</span></div>
+  <div class="toast" id="toast" hidden>Atsargiai!</div>
+  <div class="cam" id="cam" hidden>
+    <video id="camVideo" playsinline muted autoplay hidden></video>
+    <canvas id="camCv"></canvas>
+    <div class="tag"><i>●</i> GALINIS VAIZDAS</div>
+  </div>
+  <div class="controls">
+    <div class="wheelzone" id="wheelZone" aria-label="Vairas">
+      <svg id="wheel" viewBox="-60 -60 120 120" aria-hidden="true">
+        <defs>
+          <radialGradient id="wg" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#4a505a"/><stop offset="1" stop-color="#1c1f24"/></radialGradient>
+        </defs>
+        <circle r="54" fill="none" stroke="#14171b" stroke-width="13"/>
+        <circle r="54" fill="none" stroke="url(#wg)" stroke-width="10"/>
+        <path d="M -52 6 Q -30 14 -14 10 L 14 10 Q 30 14 52 6" fill="none" stroke="#2d3239" stroke-width="10" stroke-linecap="round"/>
+        <path d="M -8 12 L -6 50 L 6 50 L 8 12 Z" fill="#2d3239"/>
+        <circle r="17" fill="#22262c" stroke="#3a4048" stroke-width="2"/>
+        <circle r="5" fill="#ffc21a"/>
+        <rect x="-3" y="-60" width="6" height="11" rx="2" fill="#ffc21a"/>
+      </svg>
+      <div class="mode" id="wheelMode">TEMPK</div>
+    </div>
+    <div class="gear">PAVARA<br><b id="gear">N</b></div>
+    <div class="pedals">
+      <button class="pedal" id="pedR" type="button" aria-label="Stabdis ir atbulinė">R<small>ATBUL.</small></button>
+      <button class="pedal" id="pedD" type="button" aria-label="Akceleratorius">D<small>GAZAS</small></button>
+    </div>
+  </div>
+  <div id="win" hidden>
+    <div class="card">
+      <h2>Suparkuota!</h2>
+      <p id="wPlace">—</p>
+      <div class="bigst" id="wStars"></div>
+      <div class="stats"><span class="chip" id="wTime">0 s</span><span class="chip" id="wScr">0 įbr.</span><span class="chip" id="wPar">Norma 0 s</span></div>
+      <button class="btn" id="btnNext" type="button">Kita aikštelė →</button>
+      <div class="row2"><button class="btn ghost" id="btnAgain" type="button">Dar kartą</button><button class="btn ghost" id="btnMenu" type="button">Meniu</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+// ======================= Konstantos ir pagalbinės =======================
+const CAR = { L: 4.4, W: 1.8, WB: 2.7, MAXS: 0.62, ACC: 3.2, BRAKE: 8.5, MAXF: 6.5, MAXR: 3.2, DRAG: 1.6 };
+const DEG = Math.PI / 180;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const angNorm = a => { a = (a + Math.PI) % (2 * Math.PI); if (a < 0) a += 2 * Math.PI; return a - Math.PI; };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('pk.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('pk.' + k, JSON.stringify(v)); } catch {} }
+};
+const vib = p => { try { navigator.vibrate && navigator.vibrate(p); } catch {} };
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const COLORS = ['#c8102e', '#1f4e9c', '#e6e6e3', '#26292e', '#6b7680', '#2e7d4f', '#8a1c3b', '#d9cfba', '#3a7bd5', '#b5b9bd', '#d4572a', '#5a3d7a'];
+
+// ======================= Lygiai =======================
+// Koordinatės metrais, (0,0) – viršutinis kairys kampas, y žemyn. Kampas 0° = į dešinę, -90° = į viršų.
+// Mašinos kampas – kur žiūri jos priekis. Vieta (spot): [x, y, privalomas kampas, plotis, ilgis, ar_bet_kuria_kryptimi].
+function bayRow(L, xs, y, deg, pattern) {
+  // pattern simboliai: c – mašina, r – apsukta mašina, s – tikslas, . – tuščia
+  xs.forEach((x, i) => {
+    L.bays.push([x, y, deg]);
+    const ch = pattern[i];
+    if (ch === 'c') L.cars.push([x, y, deg]);
+    if (ch === 'r') L.cars.push([x, y, deg + 180]);
+  });
+}
+function mk(o) { return Object.assign({ walls: [], cars: [], trees: [], bays: [], lines: [], zebras: [], peds: [], movers: [], theme: 'asphalt' }, o); }
+
+function buildLevels() {
+  const Ls = [];
+  // 1 — tiesiai į vietą
+  { const L = mk({ name: 'Pirmoji pamoka', place: 'Vairavimo mokyklos aikštelė, Kaunas', tip: 'Važiuok tiesiai į švytinčią vietą ir sustok.', w: 18, h: 28, par: 12,
+      start: [9.0, 22, -90], spot: [9.0, 5.2, -90, 2.7, 5.4, true] });
+    L.walls.push([0, 0, 18, 2.5, 'building'], [0, 2.5, 1.5, 25.5, 'curb'], [16.5, 2.5, 1.5, 25.5, 'curb']);
+    bayRow(L, [3.6, 6.3, 9.0, 11.7, 14.4], 5.2, -90, 'cc.rc');
+    L.trees.push([0.8, 14, 1.3], [17.2, 20, 1.4]);
+    Ls.push(L); }
+  // 2 — posūkis į vietą
+  { const L = mk({ name: 'Prekybos centro aikštelė', place: 'Ozo g., Vilnius', tip: 'Pasuk į kairę ir įvažiuok į laisvą vietą viršuje.', w: 18, h: 30, par: 20,
+      start: [4.6, 15, 0], spot: [11.7, 5.2, -90, 2.7, 5.4, true] });
+    L.walls.push([0, 0, 18, 2.5, 'building'], [0, 27.5, 18, 2.5, 'curb']);
+    bayRow(L, [3.6, 6.3, 9.0, 11.7, 14.4], 5.2, -90, 'crc.c');
+    bayRow(L, [3.6, 6.3, 9.0, 11.7, 14.4], 24.8, 90, 'c.ccr');
+    L.lines.push([1, 15, 17, 15, 'd']);
+    Ls.push(L); }
+  // 3 — atbulomis
+  { const L = mk({ name: 'Atbulomis į boksą', place: 'Prekybos parkas, Kaunas', tip: 'Pravažiuok vietą ir įvažiuok atbulomis – priekis turi žiūrėti į praėjimą.', w: 18, h: 30, par: 30,
+      start: [4.6, 16, 0], spot: [9.0, 5.2, 90, 2.7, 5.4, false] });
+    L.walls.push([0, 0, 18, 2.5, 'building'], [0, 27.5, 18, 2.5, 'curb']);
+    bayRow(L, [3.6, 6.3, 9.0, 11.7, 14.4], 5.2, -90, 'cr.cc');
+    bayRow(L, [3.6, 6.3, 9.0, 11.7, 14.4], 24.8, 90, 'cc.cc');
+    Ls.push(L); }
+  // 4 — lygiagretus
+  { const L = mk({ name: 'Gedimino prospektas', place: 'Vilniaus centras', tip: 'Lygiagretus parkavimas: sustok šalia priekinės mašinos ir įsuk atbulomis.', w: 16, h: 32, par: 35,
+      start: [9.4, 27, -90], spot: [12.65, 13.75, -90, 2.4, 6.3, true] });
+    L.walls.push([0, 0, 2.2, 32, 'curb'], [13.8, 0, 2.2, 32, 'curb']);
+    L.cars.push([12.65, 3.5, -90], [12.65, 8.3, -90], [12.65, 19.2, -90], [12.65, 24.4, -90], [12.65, 29.4, -90]);
+    L.cars.push([3.35, 5, 90], [3.35, 12, 90], [3.35, 24.5, 90]);
+    L.lines.push([8, 0, 8, 32, 'd']);
+    L.trees.push([15.0, 7, 1.2], [15.0, 17.5, 1.3], [15.0, 27, 1.2], [1.0, 9, 1.2], [1.0, 21, 1.3]);
+    Ls.push(L); }
+  // 5 — įstrižai
+  { const L = mk({ name: 'Įstrižinė aikštelė', place: 'Turgaus aikštė, Šiauliai', tip: 'Vietos įstrižos – įvažiuok jų kryptimi.', w: 18, h: 30, par: 20,
+      start: [4.2, 17.5, 0], spot: [9.1, 5.6, -60, 2.7, 5.4, false] });
+    L.walls.push([0, 0, 18, 2.4, 'building'], [0, 26, 18, 4, 'grass']);
+    bayRow(L, [2.9, 6.0, 9.1, 12.2, 15.3], 5.6, -60, 'cc.cc');
+    L.trees.push([3, 28, 1.5], [9, 28.2, 1.6], [15, 28, 1.5]);
+    L.lines.push([0, 12.5, 18, 12.5, 'w']);
+    Ls.push(L); }
+  // 6 — senamiesčio kiemas
+  { const L = mk({ name: 'Senamiesčio kiemas', place: 'Pilies g., Vilnius', tip: 'Ankštas kiemas – apsisuk keliais judesiais.', theme: 'cobble', w: 16, h: 26, par: 45,
+      start: [8.0, 20.5, 90], spot: [8.0, 4.9, -90, 2.7, 5.4, true] });
+    L.walls.push([0, 0, 3, 26, 'roof'], [13, 0, 3, 26, 'roof'], [3, 0, 10, 2.0, 'roof']);
+    L.cars.push([4.6, 4.9, -90]);
+    L.trees.push([11.4, 5.4, 1.3]);
+    L.walls.push([3, 24.6, 3, 1.4, 'planter'], [10, 24.6, 3, 1.4, 'planter']);
+    Ls.push(L); }
+  // 7 — prie Katedros, pėsčiasis
+  { const L = mk({ name: 'Prie Katedros', place: 'Šventaragio g., Vilnius', tip: 'Praleisk pėsčiąjį per perėją ir pastatyk mašiną kairėje.', w: 16, h: 32, par: 40,
+      start: [8.6, 29.0, -90], spot: [3.35, 15.05, -90, 2.4, 6.3, true] });
+    L.walls.push([0, 0, 2.2, 32, 'curb'], [13.8, 0, 2.2, 32, 'curb']);
+    L.cars.push([3.35, 4, -90], [3.35, 9.5, -90], [3.35, 20.6, -90], [3.35, 27.5, -90]);
+    L.cars.push([12.65, 5, 90], [12.65, 12, 90], [12.65, 28.2, 90]);
+    L.zebras.push([2.2, 23.0, 11.6, 2.2]);
+    L.peds.push([1.3, 24.1, 14.7, 24.1, 1.1]);
+    L.lines.push([8, 0, 8, 22.5, 'd'], [8, 25.6, 8, 32, 'd']);
+    L.trees.push([1.0, 13, 1.2], [15, 9, 1.3], [15, 20, 1.2]);
+    Ls.push(L); }
+  // 8 — požeminis garažas
+  { const L = mk({ name: 'Požeminis garažas', place: '−2 aukštas, Konstitucijos pr.', tip: 'Atbulomis tarp kolonų. Žiūrėk į galinio vaizdo kamerą.', theme: 'garage', w: 18, h: 28, par: 40,
+      start: [13.5, 15, 180], spot: [9.0, 3.7, 90, 2.8, 5.4, false] });
+    L.walls.push([0, 0, 18, 1, 'wall'], [0, 0, 1, 28, 'wall'], [17, 0, 1, 28, 'wall'], [0, 27, 18, 1, 'wall']);
+    bayRow(L, [3.4, 6.2, 9.0, 11.8, 14.6], 3.7, -90, 'rc.cr');
+    bayRow(L, [3.4, 6.2, 9.0, 11.8, 14.6], 24.3, 90, 'cc.rc');
+    for (const x of [2.0, 4.8, 10.4, 16.0]) L.walls.push([x - 0.3, 5.9, 0.6, 0.6, 'pillar']);
+    for (const x of [2.0, 7.6, 13.2, 16.0]) L.walls.push([x - 0.3, 21.5, 0.6, 0.6, 'pillar']);
+    L.lines.push([1, 14, 17, 14, 'y']);
+    Ls.push(L); }
+  // 9 — judanti mašina
+  { const L = mk({ name: 'Turgaus aikštė', place: 'Kalvarijų turgus, Vilnius', tip: 'Praėjimu važinėja kiti – palauk savo eilės.', w: 18, h: 30, par: 30,
+      start: [4.6, 19.5, 0], spot: [6.3, 5.2, -90, 2.7, 5.4, true] });
+    L.walls.push([0, 0, 18, 2.5, 'building'], [0, 27.5, 18, 2.5, 'curb']);
+    bayRow(L, [3.6, 6.3, 9.0, 11.7, 14.4], 5.2, -90, 'c.crc');
+    bayRow(L, [3.6, 6.3, 9.0, 11.7, 14.4], 24.8, 90, 'rcc.c');
+    L.movers.push([-4, 12.5, 22, 12.5, 3.2, '#d4572a']);
+    Ls.push(L); }
+  // 10 — Užupio skersgatvis
+  { const L = mk({ name: 'Užupio skersgatvis', place: 'Užupio g., Vilnius', tip: 'Prasibrauk pro gėlynus ir lygiagrečiai pastatyk viršuje.', theme: 'cobble', w: 16, h: 34, par: 45,
+      start: [6.0, 30.5, -90], spot: [11.9, 8.5, -90, 2.4, 6.3, true] });
+    L.walls.push([0, 0, 3, 34, 'roof'], [13, 0, 3, 34, 'roof'], [3, 24, 4, 1.5, 'planter'], [9, 17.5, 4, 1.5, 'planter']);
+    L.cars.push([11.9, 3.0, -90], [11.9, 14.0, -90]);
+    L.trees.push([4.3, 13, 1.1]);
+    Ls.push(L); }
+  // 11 — Vingio parkas
+  { const L = mk({ name: 'Vingio parkas', place: 'Koncertų aikštelė, Vilnius', tip: 'Apvažiuok salelę ir įvažiuok atbulomis.', w: 18, h: 30, par: 45,
+      start: [9.0, 23.5, 180], spot: [11.8, 4.7, 90, 2.8, 5.4, false] });
+    L.walls.push([0, 0, 18, 2, 'grass'], [0, 2, 2, 28, 'grass'], [16, 2, 2, 28, 'grass'], [2, 28, 14, 2, 'grass'], [6, 13, 6, 4, 'grass']);
+    bayRow(L, [3.4, 6.2, 9.0, 11.8, 14.6], 4.7, -90, 'crc.c');
+    L.trees.push([2.5, 0.8, 1.6], [7.2, 0.6, 1.5], [12.2, 0.7, 1.7], [16.8, 1.0, 1.5], [7.4, 15, 1.3], [10.6, 15, 1.3], [0.9, 12, 1.4], [17.1, 18, 1.5], [0.9, 25, 1.5], [9, 29.2, 1.4]);
+    Ls.push(L); }
+  // 12 — egzaminas
+  { const L = mk({ name: 'Meistro egzaminas', place: 'Laisvės alėja, Kaunas', tip: 'Siaura vieta, pėsčiasis ir taksi. Parodyk, ką moki.', w: 16, h: 34, par: 50,
+      start: [9.4, 31.0, -90], spot: [12.65, 15.3, -90, 2.4, 6.0, true] });
+    L.walls.push([0, 0, 2.2, 34, 'curb'], [13.8, 0, 2.2, 34, 'curb']);
+    L.cars.push([12.65, 4, -90], [12.65, 10.0, -90], [12.65, 20.6, -90], [12.65, 26, -90]);
+    L.cars.push([3.35, 6, 90], [3.35, 13, 90], [3.35, 19.6, 90], [3.35, 28.6, 90]);
+    L.zebras.push([2.2, 23.3, 11.6, 2.2]);
+    L.peds.push([1.2, 24.4, 14.8, 24.4, 1.0]);
+    L.movers.push([6.2, -4, 6.2, 38, 3.0, '#ffd23f']);
+    L.lines.push([8, 0, 8, 22.8, 'd'], [8, 26, 8, 34, 'd']);
+    L.trees.push([15, 13.5, 1.2], [15, 30, 1.2], [1, 3, 1.2], [1, 24.4, 1.0]);
+    Ls.push(L); }
+  // Mažas „gyvumas“: deterministiškai pakreipiame stovinčias mašinas ir parenkame spalvas.
+  Ls.forEach((L, i) => {
+    const r = rng(1000 + i * 77);
+    L.cars = L.cars.map(([x, y, d]) => [x + (r() - .5) * .2, y + (r() - .5) * .2, d + (r() - .5) * 5, COLORS[Math.floor(r() * COLORS.length)]]);
+  });
+  return Ls;
+}
+const LEVELS = buildLevels();
+
+// ======================= Fizika ir susidūrimai =======================
+const boxFromWall = w => ({ x: w[0] + w[2] / 2, y: w[1] + w[3] / 2, a: 0, hl: w[2] / 2, hw: w[3] / 2 });
+const carBox = (c, grow = 0) => ({ x: c.x, y: c.y, a: c.a, hl: CAR.L / 2 + grow, hw: CAR.W / 2 + grow });
+function proj(b, ax, ay) {
+  const c = Math.cos(b.a), s = Math.sin(b.a);
+  const m = b.x * ax + b.y * ay, r = b.hl * Math.abs(c * ax + s * ay) + b.hw * Math.abs(-s * ax + c * ay);
+  return [m - r, m + r];
+}
+function boxHit(A, B) {
+  const axes = [[Math.cos(A.a), Math.sin(A.a)], [-Math.sin(A.a), Math.cos(A.a)], [Math.cos(B.a), Math.sin(B.a)], [-Math.sin(B.a), Math.cos(B.a)]];
+  for (const [ax, ay] of axes) { const p = proj(A, ax, ay), q = proj(B, ax, ay); if (p[1] <= q[0] || q[1] <= p[0]) return false; }
+  return true;
+}
+function circHit(B, cx, cy, r) {
+  const c = Math.cos(B.a), s = Math.sin(B.a), dx = cx - B.x, dy = cy - B.y;
+  const lx = dx * c + dy * s, ly = -dx * s + dy * c;
+  const qx = clamp(lx, -B.hl, B.hl), qy = clamp(ly, -B.hw, B.hw);
+  return (lx - qx) ** 2 + (ly - qy) ** 2 < r * r;
+}
+function staticColliders(L) {
+  const boxes = L.walls.map(boxFromWall);
+  for (const c of L.cars) boxes.push({ x: c[0], y: c[1], a: c[2] * DEG, hl: CAR.L / 2, hw: CAR.W / 2 });
+  // nematomos ribos už pasaulio krašto
+  boxes.push({ x: L.w / 2, y: -5, a: 0, hl: L.w, hw: 5 }, { x: L.w / 2, y: L.h + 5, a: 0, hl: L.w, hw: 5 },
+             { x: -5, y: L.h / 2, a: 0, hl: 5, hw: L.h }, { x: L.w + 5, y: L.h / 2, a: 0, hl: 5, hw: L.h });
+  const circles = L.trees.map(t => [t[0], t[1], 0.45]);
+  return { boxes, circles };
+}
+function hitsStatic(col, b) {
+  for (const o of col.boxes) if (boxHit(b, o)) return true;
+  for (const c of col.circles) if (circHit(b, c[0], c[1], c[2])) return true;
+  return false;
+}
+// Dviračio modelis: sukamasi apie galinę ašį.
+function stepCar(c, inp, dt) {
+  const n = { ...c };
+  const target = clamp(inp.steer, -1, 1) * CAR.MAXS;
+  const rate = inp.direct ? 4.2 : 2.6;
+  n.steer += clamp(target - n.steer, -rate * dt, rate * dt);
+  let acc;
+  if (inp.hand) acc = -Math.sign(n.v) * Math.min(CAR.BRAKE * 1.3, Math.abs(n.v) / dt);
+  else if (inp.gas && !inp.rev) acc = n.v < -0.05 ? CAR.BRAKE : CAR.ACC;
+  else if (inp.rev && !inp.gas) acc = n.v > 0.05 ? -CAR.BRAKE : -CAR.ACC;
+  else acc = -Math.sign(n.v) * Math.min(CAR.DRAG, Math.abs(n.v) / dt);
+  const before = n.v;
+  n.v = clamp(n.v + acc * dt, -CAR.MAXR, CAR.MAXF);
+  if ((inp.gas && before < -0.05 && n.v > 0) || (inp.rev && before > 0.05 && n.v < 0)) n.v = 0;
+  n.braking = (inp.rev && before > 0.05) || (inp.gas && before < -0.05) || inp.hand;
+  const hw = CAR.WB / 2, ca = Math.cos(n.a), sa = Math.sin(n.a);
+  let rx = n.x - ca * hw, ry = n.y - sa * hw;
+  rx += n.v * ca * dt; ry += n.v * sa * dt;
+  n.a = angNorm(n.a + n.v / CAR.WB * Math.tan(n.steer) * dt);
+  n.x = rx + Math.cos(n.a) * hw; n.y = ry + Math.sin(n.a) * hw;
+  return n;
+}
+function spotState(L, c) {
+  const [sx, sy, sd, sw, sl, any] = L.spot, sa = sd * DEG, cs = Math.cos(sa), sn = Math.sin(sa);
+  const ca = Math.cos(c.a), sA = Math.sin(c.a);
+  let inside = true;
+  for (const [u, v] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+    const px = c.x + ca * u * CAR.L / 2 - sA * v * CAR.W / 2, py = c.y + sA * u * CAR.L / 2 + ca * v * CAR.W / 2;
+    const dx = px - sx, dy = py - sy, lx = dx * cs + dy * sn, ly = -dx * sn + dy * cs;
+    if (Math.abs(lx) > sl / 2 || Math.abs(ly) > sw / 2) { inside = false; break; }
+  }
+  let diff = Math.abs(angNorm(c.a - sa));
+  if (any) diff = Math.min(diff, Math.PI - diff);
+  return { inside, aligned: diff < 12 * DEG, diff };
+}
+const starsFor = (t, sc, par) => { let s = 3; if (sc > 0) s--; if (sc > 2) s--; if (t > par) s--; return Math.max(1, s); };
+
+// ======================= Piešimas =======================
+function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = n >> 8 & 255, b = n & 255;
+  const t = f < 0 ? 0 : 255, p = Math.abs(f);
+  r = Math.round((t - r) * p + r); g = Math.round((t - g) * p + g); b = Math.round((t - b) * p + b);
+  return `rgb(${r},${g},${b})`;
+}
+// Mašina vietinėse koordinatėse: +x – priekis. Vienetai – metrai.
+function drawCar(ctx, x, y, a, color, o = {}) {
+  const L = CAR.L, W = CAR.W, pxm = o.pxm || 20;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+  // šešėlis
+  if (!o.noShadow) {
+    ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.45)';
+    ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 0.5 * pxm; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+    rr(ctx, -L / 2 + 0.12, -W / 2 + 0.18, L, W, 0.55); ctx.fill(); ctx.restore();
+  }
+  // ratai
+  ctx.fillStyle = '#0d0e10';
+  const wl = 0.72, ww = 0.26;
+  for (const sx of [-CAR.WB / 2, CAR.WB / 2]) for (const sy of [-1, 1]) {
+    ctx.save(); ctx.translate(sx, sy * (W / 2 - 0.08));
+    if (sx > 0) ctx.rotate(o.steer || 0);
+    rr(ctx, -wl / 2, -ww / 2, wl, ww, 0.08); ctx.fill(); ctx.restore();
+  }
+  // kėbulas
+  const g = ctx.createLinearGradient(0, -W / 2, 0, W / 2);
+  g.addColorStop(0, shade(color, -0.35)); g.addColorStop(0.22, color); g.addColorStop(0.5, shade(color, 0.12)); g.addColorStop(0.78, color); g.addColorStop(1, shade(color, -0.35));
+  ctx.fillStyle = g; rr(ctx, -L / 2, -W / 2, L, W, 0.55); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 0.04; ctx.stroke();
+  // variklio dangčio linijos
+  ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 0.03;
+  ctx.beginPath(); ctx.moveTo(1.3, -W / 2 + 0.25); ctx.quadraticCurveTo(2.05, 0, 1.3, W / 2 - 0.25); ctx.stroke();
+  // priekinis stiklas
+  const gl = ctx.createLinearGradient(0.5, 0, 1.3, 0);
+  gl.addColorStop(0, '#1a2230'); gl.addColorStop(1, '#4a6280');
+  ctx.fillStyle = gl; ctx.beginPath();
+  ctx.moveTo(0.45, -W / 2 + 0.16); ctx.lineTo(1.25, -W / 2 + 0.3); ctx.quadraticCurveTo(1.38, 0, 1.25, W / 2 - 0.3); ctx.lineTo(0.45, W / 2 - 0.16); ctx.closePath(); ctx.fill();
+  // galinis stiklas
+  ctx.beginPath(); ctx.moveTo(-1.15, -W / 2 + 0.18); ctx.lineTo(-1.6, -W / 2 + 0.3); ctx.quadraticCurveTo(-1.7, 0, -1.6, W / 2 - 0.3); ctx.lineTo(-1.15, W / 2 - 0.18); ctx.closePath();
+  ctx.fillStyle = '#1e2633'; ctx.fill();
+  // stogas
+  const gr = ctx.createLinearGradient(0, -W / 2, 0, W / 2);
+  gr.addColorStop(0, shade(color, -0.15)); gr.addColorStop(0.45, shade(color, 0.28)); gr.addColorStop(1, shade(color, -0.2));
+  ctx.fillStyle = gr; rr(ctx, -1.15, -W / 2 + 0.2, 1.6, W - 0.4, 0.25); ctx.fill();
+  // šoniniai langai
+  ctx.fillStyle = 'rgba(20,28,40,.85)';
+  rr(ctx, -1.1, -W / 2 + 0.08, 1.5, 0.13, 0.05); ctx.fill(); rr(ctx, -1.1, W / 2 - 0.21, 1.5, 0.13, 0.05); ctx.fill();
+  // stogo blizgesys
+  ctx.fillStyle = 'rgba(255,255,255,.18)'; rr(ctx, -0.9, -W / 2 + 0.32, 1.1, 0.2, 0.1); ctx.fill();
+  // veidrodėliai
+  ctx.fillStyle = shade(color, -0.25);
+  rr(ctx, 0.55, -W / 2 - 0.14, 0.22, 0.16, 0.05); ctx.fill(); rr(ctx, 0.55, W / 2 - 0.02, 0.22, 0.16, 0.05); ctx.fill();
+  // žibintai
+  ctx.fillStyle = '#fff8d6';
+  rr(ctx, L / 2 - 0.16, -W / 2 + 0.15, 0.12, 0.38, 0.05); ctx.fill(); rr(ctx, L / 2 - 0.16, W / 2 - 0.53, 0.12, 0.38, 0.05); ctx.fill();
+  const tail = o.brake ? '#ff2a2a' : '#8e1212';
+  ctx.fillStyle = tail;
+  rr(ctx, -L / 2 + 0.04, -W / 2 + 0.14, 0.12, 0.4, 0.05); ctx.fill(); rr(ctx, -L / 2 + 0.04, W / 2 - 0.54, 0.12, 0.4, 0.05); ctx.fill();
+  if (o.reverse) { ctx.fillStyle = '#ffffff'; rr(ctx, -L / 2 + 0.04, -0.15, 0.1, 0.3, 0.04); ctx.fill(); }
+  if (o.brake || o.reverse) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const sy of [-W / 2 + 0.34, W / 2 - 0.34]) {
+      const rg = ctx.createRadialGradient(-L / 2, sy, 0, -L / 2, sy, 1.1);
+      rg.addColorStop(0, o.brake ? 'rgba(255,40,40,.55)' : 'rgba(255,255,255,.35)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(-L / 2, sy, 1.1, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  if (o.player) {
+    // taksi stilius – languota juosta ir šviečiantis ženklas
+    ctx.fillStyle = '#1a1405';
+    for (let i = 0; i < 6; i++) { ctx.fillRect(-1.0 + i * 0.26, -0.06, 0.13, 0.12); }
+  }
+  ctx.restore();
+}
+function drawTreeCanopy(ctx, x, y, r, seed) {
+  const R = rng(seed);
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.arc(x + r * 0.35, y + r * 0.45, r * 1.02, 0, Math.PI * 2); ctx.fill();
+  const blobs = 7;
+  for (let i = 0; i < blobs; i++) {
+    const ang = (i / blobs) * Math.PI * 2 + R(), d = r * (0.35 + R() * 0.25), br = r * (0.45 + R() * 0.2);
+    const bx = x + Math.cos(ang) * d, by = y + Math.sin(ang) * d;
+    const g = ctx.createRadialGradient(bx - br * .3, by - br * .3, br * .1, bx, by, br);
+    g.addColorStop(0, '#6fae4c'); g.addColorStop(1, '#2d5e2a');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+  }
+  const g = ctx.createRadialGradient(x - r * .3, y - r * .35, r * .1, x, y, r * .7);
+  g.addColorStop(0, '#8cc764'); g.addColorStop(1, '#3d7a33');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 0.62, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+function noise(ctx, x, y, w, h, count, colors, R, size) {
+  for (let i = 0; i < count; i++) {
+    ctx.fillStyle = colors[Math.floor(R() * colors.length)];
+    ctx.fillRect(x + R() * w, y + R() * h, size, size);
+  }
+}
+// Statinis sluoksnis: žemė, linijos, stovinčios mašinos. Viršutinis: medžių lajos, stogai.
+function renderLayers(L, ppm) {
+  const W = Math.ceil(L.w * ppm), H = Math.ceil(L.h * ppm);
+  const bg = document.createElement('canvas'); bg.width = W; bg.height = H;
+  const top = document.createElement('canvas'); top.width = W; top.height = H;
+  const b = bg.getContext('2d'), t = top.getContext('2d');
+  b.scale(ppm, ppm); t.scale(ppm, ppm);
+  const R = rng(4242 + L.w * 13 + L.h);
+  const px = 1 / ppm;
+  // žemė
+  if (L.theme === 'cobble') {
+    b.fillStyle = '#5d554b'; b.fillRect(0, 0, L.w, L.h);
+    for (let y = 0; y < L.h; y += 0.32) {
+      const off = (Math.round(y / 0.32) % 2) * 0.17;
+      for (let x = -0.3 + off; x < L.w; x += 0.34) {
+        const v = 0.75 + R() * 0.35, base = [120, 110, 98].map(c => Math.round(c * v));
+        b.fillStyle = `rgb(${base})`; rr(b, x + 0.02, y + 0.02, 0.3, 0.28, 0.09); b.fill();
+        b.fillStyle = 'rgba(255,255,255,.07)'; b.fillRect(x + 0.06, y + 0.05, 0.16, 0.05);
+      }
+    }
+  } else if (L.theme === 'garage') {
+    b.fillStyle = '#62666c'; b.fillRect(0, 0, L.w, L.h);
+    noise(b, 0, 0, L.w, L.h, Math.round(L.w * L.h * 40), ['rgba(255,255,255,.05)', 'rgba(0,0,0,.08)'], R, px * 1.5);
+    for (let i = 0; i < 7; i++) { const ox = R() * L.w, oy = 8 + R() * 12; const g = b.createRadialGradient(ox, oy, 0, ox, oy, 0.6 + R()); g.addColorStop(0, 'rgba(10,10,12,.35)'); g.addColorStop(1, 'rgba(10,10,12,0)'); b.fillStyle = g; b.fillRect(ox - 2, oy - 2, 4, 4); }
+  } else {
+    b.fillStyle = '#383c42'; b.fillRect(0, 0, L.w, L.h);
+    noise(b, 0, 0, L.w, L.h, Math.round(L.w * L.h * 90), ['rgba(255,255,255,.06)', 'rgba(0,0,0,.12)', 'rgba(255,255,255,.03)'], R, px * 1.6);
+    for (let i = 0; i < 5; i++) { const ox = R() * L.w, oy = R() * L.h; const g = b.createRadialGradient(ox, oy, 0, ox, oy, 0.8 + R()); g.addColorStop(0, 'rgba(0,0,0,.22)'); g.addColorStop(1, 'rgba(0,0,0,0)'); b.fillStyle = g; b.fillRect(ox - 2, oy - 2, 4, 4); }
+    b.strokeStyle = 'rgba(0,0,0,.25)'; b.lineWidth = 0.03;
+    for (let i = 0; i < 6; i++) { let x = R() * L.w, y = R() * L.h; b.beginPath(); b.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (R() - .5) * 1.2; y += (R() - .5) * 1.2; b.lineTo(x, y); } b.stroke(); }
+  }
+  // perėjos
+  for (const [x, y, w, h] of L.zebras) {
+    b.fillStyle = 'rgba(244,242,234,.85)';
+    for (let sx = x + 0.3; sx < x + w - 0.3; sx += 1.0) b.fillRect(sx, y, 0.5, h);
+  }
+  // linijos
+  b.lineCap = 'butt';
+  for (const [x1, y1, x2, y2, k] of L.lines) {
+    b.strokeStyle = k === 'y' ? '#e8b923' : 'rgba(244,242,234,.82)'; b.lineWidth = 0.12;
+    b.setLineDash(k === 'd' ? [1.5, 1.5] : []); b.beginPath(); b.moveTo(x1, y1); b.lineTo(x2, y2); b.stroke();
+  }
+  b.setLineDash([]);
+  for (const [x, y, d] of L.bays) {
+    const a = d * DEG, c = Math.cos(a), s = Math.sin(a), bw = 1.35, bl = 2.7;
+    b.strokeStyle = L.theme === 'garage' ? '#e8b923' : 'rgba(244,242,234,.82)'; b.lineWidth = 0.12;
+    for (const side of [-1, 1]) {
+      const ox = -s * bw * side, oy = c * bw * side;
+      b.beginPath(); b.moveTo(x + ox - c * bl, y + oy - s * bl); b.lineTo(x + ox + c * bl, y + oy + s * bl); b.stroke();
+    }
+  }
+  // sienos ir zonos
+  for (const w of L.walls) {
+    const [x, y, ww, hh, k] = w;
+    if (k === 'curb') {
+      b.fillStyle = '#9fa3a8'; b.fillRect(x, y, ww, hh);
+      b.strokeStyle = 'rgba(0,0,0,.12)'; b.lineWidth = 0.02;
+      for (let gx = x; gx <= x + ww; gx += 0.8) { b.beginPath(); b.moveTo(gx, y); b.lineTo(gx, y + hh); b.stroke(); }
+      for (let gy = y; gy <= y + hh; gy += 0.8) { b.beginPath(); b.moveTo(x, gy); b.lineTo(x + ww, gy); b.stroke(); }
+      b.strokeStyle = '#d4d6d9'; b.lineWidth = 0.2; b.strokeRect(x + 0.1, y + 0.1, ww - 0.2, hh - 0.2);
+    } else if (k === 'grass') {
+      b.fillStyle = '#3f7a35'; b.fillRect(x, y, ww, hh);
+      noise(b, x, y, ww, hh, Math.round(ww * hh * 220), ['rgba(120,180,80,.35)', 'rgba(20,60,20,.35)', 'rgba(160,200,100,.25)'], R, px * 2);
+      b.strokeStyle = '#a5a9ad'; b.lineWidth = 0.18; b.strokeRect(x + 0.09, y + 0.09, ww - 0.18, hh - 0.18);
+    } else if (k === 'planter') {
+      b.fillStyle = 'rgba(0,0,0,.35)'; b.fillRect(x + 0.2, y + 0.25, ww, hh);
+      b.fillStyle = '#7a5230'; b.fillRect(x, y, ww, hh);
+      b.fillStyle = '#4b3420'; b.fillRect(x + 0.15, y + 0.15, ww - 0.3, hh - 0.3);
+      for (let i = 0; i < ww * 3; i++) { const fx = x + 0.3 + R() * (ww - 0.6), fy = y + 0.3 + R() * (hh - 0.6); t.fillStyle = ['#5f9e46', '#78b257', '#e05a7a', '#f0c24a'][Math.floor(R() * 4)]; t.beginPath(); t.arc(fx, fy, 0.12 + R() * 0.18, 0, 7); t.fill(); }
+    } else if (k === 'pillar') {
+      b.fillStyle = 'rgba(0,0,0,.45)'; b.fillRect(x + 0.18, y + 0.22, ww, hh);
+      t.fillStyle = '#a8adb3'; t.fillRect(x, y, ww, hh);
+      t.fillStyle = '#e8b923'; t.fillRect(x, y, ww, 0.12); t.fillRect(x, y + hh - 0.12, ww, 0.12);
+    } else if (k === 'wall') {
+      t.fillStyle = '#3c4046'; t.fillRect(x, y, ww, hh);
+      t.fillStyle = 'rgba(255,255,255,.08)'; t.fillRect(x, y, ww, Math.min(hh, 0.1));
+    } else if (k === 'building' || k === 'roof') {
+      b.fillStyle = 'rgba(0,0,0,.5)'; b.fillRect(x + 0.5, y + 0.7, ww, hh);
+      const old = k === 'roof';
+      t.fillStyle = old ? '#9a4b33' : '#4c535c'; t.fillRect(x, y, ww, hh);
+      if (old) {
+        t.strokeStyle = 'rgba(0,0,0,.2)'; t.lineWidth = 0.04;
+        const vertical = hh > ww;
+        for (let k2 = 0; k2 < (vertical ? hh : ww); k2 += 0.35) { t.beginPath(); if (vertical) { t.moveTo(x, y + k2); t.lineTo(x + ww, y + k2); } else { t.moveTo(x + k2, y); t.lineTo(x + k2, y + hh); } t.stroke(); }
+        t.strokeStyle = '#6e3020'; t.lineWidth = 0.14; t.beginPath();
+        if (vertical) { t.moveTo(x + ww / 2, y); t.lineTo(x + ww / 2, y + hh); } else { t.moveTo(x, y + hh / 2); t.lineTo(x + ww, y + hh / 2); } t.stroke();
+      } else {
+        t.fillStyle = 'rgba(255,255,255,.06)';
+        for (let gx = x + 0.6; gx < x + ww - 1; gx += 3) t.fillRect(gx, y + 0.5, 1.6, Math.max(0.2, hh - 1));
+        t.fillStyle = '#6a737d'; t.fillRect(x, y + hh - 0.18, ww, 0.18);
+      }
+    }
+  }
+  // stovinčios mašinos
+  for (const c of L.cars) drawCar(b, c[0], c[1], c[2] * DEG, c[3], { pxm: ppm });
+  // medžiai
+  L.trees.forEach((tr, i) => {
+    b.fillStyle = 'rgba(0,0,0,.3)'; b.beginPath(); b.arc(tr[0], tr[1], 0.5, 0, 7); b.fill();
+    drawTreeCanopy(t, tr[0], tr[1], tr[2], 99 + i * 31);
+  });
+  return { bg, top };
+}
+function drawPed(ctx, p, time) {
+  ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.dirA); ctx.scale(1.45, 1.45);
+  const sw = Math.sin(time * 9 + p.phase) * (p.walking ? 0.22 : 0);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0.08, 0.1, 0.32, 0.4, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(sw, -0.13, 0.14, 0.08, 0, 0, 7); ctx.ellipse(-sw, 0.13, 0.14, 0.08, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = p.color; ctx.beginPath(); ctx.ellipse(0, 0, 0.17, 0.3, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#e8c39e'; ctx.beginPath(); ctx.arc(0.02, 0, 0.13, 0, 7); ctx.fill();
+  ctx.fillStyle = '#4a2f1d'; ctx.beginPath(); ctx.arc(-0.02, 0, 0.12, Math.PI * 0.5, Math.PI * 1.5); ctx.fill();
+  ctx.restore();
+}
+
+// ======================= Būsena =======================
+const G = {
+  li: 0, L: null, col: null, car: null, t: 0, started: false, scratches: 0, won: false, hold: 0, cool: 0, shake: 0,
+  peds: [], movers: [], sparks: [], layers: null, skid: null, skidCtx: null, ppm: 20, view: null, time: 0,
+  inp: { wheel: null, kl: 0, kr: 0, ku: 0, kd: 0, gas: 0, rev: 0, hand: 0 }, gear: 'N', lastRear: null
+};
+const SET = { tilt: false, ar: false, sound: store.get('sound', true) };
+
+function loadLevel(i) {
+  G.li = i; G.L = LEVELS[i]; G.col = staticColliders(G.L);
+  const [x, y, d] = G.L.start;
+  G.car = { x, y, a: d * DEG, v: 0, steer: 0 };
+  G.t = 0; G.started = false; G.scratches = 0; G.won = false; G.hold = 0; G.cool = 0; G.shake = 0; G.sparks = []; G.gear = 'N';
+  G.peds = G.L.peds.map((p, k) => ({ x1: p[0], y1: p[1], x2: p[2], y2: p[3], speed: p[4], t: 0, dir: 1, wait: 0, x: p[0], y: p[1], dirA: 0, phase: k, walking: true, color: ['#2f6fdb', '#c23b6b', '#2e9c6a'][k % 3] }));
+  G.movers = G.L.movers.map(m => ({ x1: m[0], y1: m[1], x2: m[2], y2: m[3], speed: m[4], color: m[5], t: 0, len: Math.hypot(m[2] - m[0], m[3] - m[1]), a: Math.atan2(m[3] - m[1], m[2] - m[0]), x: m[0], y: m[1] }));
+  layout(true);
+}
+
+// ======================= Ekrano išdėstymas =======================
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let VW = 0, VH = 0, DPR = 1;
+function layout(rebuild) {
+  if (!G.L) return;
+  const r = cv.getBoundingClientRect(); DPR = Math.min(2.5, window.devicePixelRatio || 1);
+  VW = r.width; VH = r.height; cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
+  const hud = document.querySelector('.hud').getBoundingClientRect().height;
+  const ctr = document.querySelector('.controls').getBoundingClientRect().height;
+  const availH = Math.max(120, VH - hud - ctr + 40), availW = VW - 12;
+  const S = Math.min(availW / G.L.w, availH / G.L.h);
+  G.view = { S, ox: (VW - G.L.w * S) / 2, oy: hud - 10 + (availH - G.L.h * S) / 2 };
+  const ppm = Math.min(90, Math.max(S * DPR, 48));
+  if (rebuild || !G.layers || G.ppm !== ppm) {
+    G.ppm = ppm; G.layers = renderLayers(G.L, ppm);
+    G.skid = document.createElement('canvas'); G.skid.width = G.layers.bg.width; G.skid.height = G.layers.bg.height;
+    G.skidCtx = G.skid.getContext('2d'); G.skidCtx.scale(ppm, ppm);
+  }
+}
+
+// ======================= Garsas =======================
+const AU = { ctx: null, osc: null, gain: null, filt: null };
+function audioInit() {
+  if (AU.ctx || !SET.sound) return;
+  try {
+    const A = window.AudioContext || window.webkitAudioContext; if (!A) return;
+    AU.ctx = new A();
+    AU.osc = AU.ctx.createOscillator(); AU.osc.type = 'sawtooth';
+    AU.filt = AU.ctx.createBiquadFilter(); AU.filt.type = 'lowpass'; AU.filt.frequency.value = 320;
+    AU.gain = AU.ctx.createGain(); AU.gain.gain.value = 0;
+    AU.osc.connect(AU.filt).connect(AU.gain).connect(AU.ctx.destination); AU.osc.start();
+  } catch { AU.ctx = null; }
+}
+function tone(freq, dur, type = 'sine', vol = 0.08) {
+  if (!AU.ctx || !SET.sound) return;
+  try {
+    const o = AU.ctx.createOscillator(), g = AU.ctx.createGain(), t = AU.ctx.currentTime;
+    o.type = type; o.frequency.value = freq; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(AU.ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+  } catch {}
+}
+function engineSound(on) {
+  if (!AU.ctx) return;
+  try {
+    const t = AU.ctx.currentTime, v = Math.abs(G.car.v);
+    AU.osc.frequency.setTargetAtTime(36 + v * 11 + (G.inp.gas || G.inp.ku ? 14 : 0), t, 0.08);
+    AU.gain.gain.setTargetAtTime(on && SET.sound ? 0.035 + v * 0.006 : 0, t, 0.1);
+  } catch {}
+}
+
+// ======================= Jutikliai: polinkis =======================
+const TILT = { ok: false, steer: 0, got: false, listening: false, base: null };
+function onOrient(e) {
+  if (e.gamma === null || e.gamma === undefined) return;
+  TILT.got = true;
+  // gamma: kairė/dešinė laikant vertikaliai
+  let s = clamp(e.gamma / 25, -1, 1);
+  if (Math.abs(s) < 0.06) s = 0;
+  TILT.steer += (s - TILT.steer) * 0.35;
+}
+async function enableTilt() {
+  const hint = document.getElementById('tiltHint');
+  try {
+    const DOE = window.DeviceOrientationEvent;
+    if (!DOE) throw new Error('none');
+    if (typeof DOE.requestPermission === 'function') {
+      const res = await DOE.requestPermission();
+      if (res !== 'granted') throw new Error('denied');
+    }
+    if (!TILT.listening) { window.addEventListener('deviceorientation', onOrient); TILT.listening = true; }
+    TILT.got = false;
+    await new Promise(r => setTimeout(r, 1200));
+    if (!TILT.got) throw new Error('silent');
+    TILT.ok = true; hint.hidden = true; return true;
+  } catch {
+    TILT.ok = false; hint.hidden = false; return false;
+  }
+}
+
+// ======================= Jutikliai: kamera (AR) =======================
+const CAM = { stream: null, ok: false };
+async function enableCamera() {
+  const hint = document.getElementById('arHint');
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('none');
+    CAM.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    const v = document.getElementById('camVideo'); v.srcObject = CAM.stream;
+    try { await v.play(); } catch {}
+    CAM.ok = true; hint.hidden = true; return true;
+  } catch {
+    CAM.ok = false; hint.hidden = false; return false;
+  }
+}
+function disableCamera() { try { CAM.stream && CAM.stream.getTracks().forEach(t => t.stop()); } catch {} CAM.stream = null; CAM.ok = false; }
+
+// ======================= Simuliacija =======================
+function currentSteer() {
+  if (G.inp.wheel !== null) return { v: G.inp.wheel, direct: true };
+  if (SET.tilt && TILT.ok) return { v: TILT.steer, direct: true };
+  return { v: (G.inp.kr ? 1 : 0) - (G.inp.kl ? 1 : 0), direct: false };
+}
+function dynamicHit(b) {
+  for (const m of G.movers) if (boxHit(b, { x: m.x, y: m.y, a: m.a, hl: CAR.L / 2, hw: CAR.W / 2 })) return 'car';
+  for (const p of G.peds) if (circHit(b, p.x, p.y, 0.32)) return 'ped';
+  return null;
+}
+function rearDistance(c) {
+  // Kiek metrų laisva už galinio buferio (iki 3 m)
+  const ca = Math.cos(c.a), sa = Math.sin(c.a), rx = c.x - ca * CAR.L / 2, ry = c.y - sa * CAR.L / 2;
+  for (let d = 0.1; d <= 3.0; d += 0.1) {
+    const b = { x: rx - ca * d / 2, y: ry - sa * d / 2, a: c.a, hl: d / 2, hw: CAR.W / 2 };
+    if (hitsStatic(G.col, b) || dynamicHit(b)) return d - 0.1;
+  }
+  return 3;
+}
+function bump(kind, impact) {
+  if (G.cool > 0) return;
+  G.cool = 0.7; G.scratches += kind === 'ped' ? 2 : 1;
+  G.shake = reduced ? 0 : Math.min(0.35, 0.1 + impact * 0.08);
+  vib(kind === 'ped' ? [40, 50, 40] : 35);
+  tone(90, 0.18, 'square', 0.12); tone(60, 0.25, 'sawtooth', 0.08);
+  const ca = Math.cos(G.car.a), sa = Math.sin(G.car.a), dir = Math.sign(G.car.v) || 1;
+  const fx = G.car.x + ca * dir * CAR.L / 2, fy = G.car.y + sa * dir * CAR.L / 2;
+  for (let i = 0; i < 14; i++) G.sparks.push({ x: fx, y: fy, vx: (Math.random() - .5) * 6, vy: (Math.random() - .5) * 6, life: 0.4 + Math.random() * 0.3 });
+  toast(kind === 'ped' ? 'Atsargiai! Pėsčiasis!' : 'Įbrėžimas!');
+}
+function simStep(dt) {
+  const st = currentSteer();
+  const inp = { steer: st.v, direct: st.direct, gas: G.inp.gas || G.inp.ku, rev: G.inp.rev || G.inp.kd, hand: G.inp.hand };
+  if (G.won) { inp.gas = 0; inp.rev = 0; inp.hand = 1; }
+  if (!G.started && (inp.gas || inp.rev)) G.started = true;
+  if (G.started && !G.won) G.t += dt;
+  if (inp.gas && !inp.rev) G.gear = 'D'; else if (inp.rev && !inp.gas && G.car.v <= 0.05) G.gear = 'R';
+  G.cool = Math.max(0, G.cool - dt); G.shake = Math.max(0, G.shake - dt);
+  const prev = G.car;
+  const next = stepCar(prev, inp, dt);
+  const nb = carBox(next);
+  const dyn = dynamicHit(nb);
+  if (hitsStatic(G.col, nb) || dyn) {
+    const impact = Math.abs(prev.v);
+    G.car = { ...prev, steer: next.steer, v: -prev.v * 0.3, braking: next.braking };
+    if (impact > 0.35) bump(dyn === 'ped' ? 'ped' : 'car', impact);
+  } else G.car = next;
+  // padangų žymės
+  const c = G.car, lat = c.v * c.v * Math.abs(Math.tan(c.steer)) / CAR.WB;
+  if ((lat > 3.2 || (c.braking && Math.abs(c.v) > 2.5)) && G.skidCtx) {
+    const ca = Math.cos(c.a), sa = Math.sin(c.a), rx = c.x - ca * CAR.WB / 2, ry = c.y - sa * CAR.WB / 2;
+    const pts = [[rx - sa * 0.8, ry + ca * 0.8], [rx + sa * 0.8, ry - ca * 0.8]];
+    if (G.lastRear) {
+      const s = G.skidCtx; s.strokeStyle = 'rgba(12,12,14,.28)'; s.lineWidth = 0.22; s.lineCap = 'round';
+      for (let k = 0; k < 2; k++) { s.beginPath(); s.moveTo(G.lastRear[k][0], G.lastRear[k][1]); s.lineTo(pts[k][0], pts[k][1]); s.stroke(); }
+    }
+    G.lastRear = pts;
+  } else G.lastRear = null;
+  // pėstieji
+  const pb = carBox(G.car, 0.35);
+  for (const p of G.peds) {
+    const len = Math.hypot(p.x2 - p.x1, p.y2 - p.y1);
+    if (p.wait > 0) { p.wait -= dt; p.walking = false; continue; }
+    const nt = p.t + p.dir * p.speed * dt, f = clamp(nt / len, 0, 1);
+    const nx = p.x1 + (p.x2 - p.x1) * f, ny = p.y1 + (p.y2 - p.y1) * f;
+    if (circHit(pb, nx, ny, 0.32)) { p.walking = false; continue; }
+    p.walking = true; p.t = nt; p.x = nx; p.y = ny; p.dirA = Math.atan2(p.y2 - p.y1, p.x2 - p.x1) + (p.dir < 0 ? Math.PI : 0);
+    if (p.t >= len) { p.t = len; p.dir = -1; p.wait = 1.5; } else if (p.t <= 0) { p.t = 0; p.dir = 1; p.wait = 1.5; }
+  }
+  // kitos mašinos
+  const mb = carBox(G.car, 0.2);
+  for (const m of G.movers) {
+    const nt = m.t + m.speed * dt, nx = m.x1 + (m.x2 - m.x1) * (nt / m.len), ny = m.y1 + (m.y2 - m.y1) * (nt / m.len);
+    const ahead = { x: nx + Math.cos(m.a) * 1.2, y: ny + Math.sin(m.a) * 1.2, a: m.a, hl: CAR.L / 2 + 1.2, hw: CAR.W / 2 };
+    if (boxHit(ahead, mb)) continue;
+    m.t = nt >= m.len ? 0 : nt; m.x = m.x1 + (m.x2 - m.x1) * (m.t / m.len); m.y = m.y1 + (m.y2 - m.y1) * (m.t / m.len);
+  }
+  // kibirkštys
+  for (const s of G.sparks) { s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= 0.92; s.vy *= 0.92; s.life -= dt; }
+  G.sparks = G.sparks.filter(s => s.life > 0);
+  // ar suparkuota
+  if (!G.won) {
+    const ss = spotState(G.L, G.car);
+    if (ss.inside && ss.aligned && Math.abs(G.car.v) < 0.25) { G.hold += dt; if (G.hold >= 0.7) win(); }
+    else G.hold = Math.max(0, G.hold - dt * 2);
+  }
+}
+
+// ======================= Kadras =======================
+function drawWorld(c2, time, opts = {}) {
+  const L = G.L;
+  c2.drawImage(G.layers.bg, 0, 0, L.w, L.h);
+  c2.drawImage(G.skid, 0, 0, L.w, L.h);
+  // vieta
+  const [sx, sy, sd, sw, sl, any] = L.spot, ss = spotState(L, G.car), good = ss.inside && ss.aligned;
+  c2.save(); c2.translate(sx, sy); c2.rotate(sd * DEG);
+  const pulse = reduced ? 0.6 : 0.5 + 0.5 * Math.sin(time * 4);
+  c2.fillStyle = good ? `rgba(61,220,132,${0.18 + 0.12 * pulse})` : `rgba(76,195,255,${0.1 + 0.1 * pulse})`;
+  c2.fillRect(-sl / 2, -sw / 2, sl, sw);
+  c2.shadowColor = good ? '#3ddc84' : '#4cc3ff'; c2.shadowBlur = 14 * (opts.blurScale || 1);
+  c2.strokeStyle = good ? '#3ddc84' : '#4cc3ff'; c2.lineWidth = 0.14; c2.setLineDash([0.6, 0.35]); c2.lineDashOffset = reduced ? 0 : -time * 1.2;
+  c2.strokeRect(-sl / 2, -sw / 2, sl, sw); c2.setLineDash([]); c2.shadowBlur = 0;
+  if (!any) {
+    c2.strokeStyle = good ? 'rgba(61,220,132,.9)' : 'rgba(76,195,255,.8)'; c2.lineWidth = 0.18; c2.lineJoin = 'round';
+    c2.beginPath(); c2.moveTo(-0.3, -0.6); c2.lineTo(0.5, 0); c2.lineTo(-0.3, 0.6); c2.moveTo(-1.1, -0.6); c2.lineTo(-0.3, 0); c2.lineTo(-1.1, 0.6); c2.stroke();
+  } else {
+    c2.rotate(-sd * DEG); c2.fillStyle = good ? 'rgba(61,220,132,.9)' : 'rgba(76,195,255,.85)';
+    c2.font = '700 1.4px "Chakra Petch", sans-serif'; c2.textAlign = 'center'; c2.textBaseline = 'middle'; c2.fillText('P', 0, 0.05);
+  }
+  if (G.hold > 0 && !G.won) {
+    c2.rotate(0); c2.strokeStyle = '#3ddc84'; c2.lineWidth = 0.16;
+    c2.beginPath(); c2.arc(0, 0, 0.9, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, G.hold / 0.7)); c2.stroke();
+  }
+  c2.restore();
+  for (const m of G.movers) drawCar(c2, m.x, m.y, m.a, m.color, { pxm: G.ppm });
+  for (const p of G.peds) drawPed(c2, p, time);
+  const c = G.car;
+  if (!opts.hidePlayer) drawCar(c2, c.x, c.y, c.a, '#ffc21a', { pxm: G.ppm, steer: c.steer, brake: c.braking || G.inp.hand, reverse: c.v < -0.05 || G.gear === 'R', player: true });
+  c2.drawImage(G.layers.top, 0, 0, L.w, L.h);
+  for (const s of G.sparks) { c2.fillStyle = `rgba(255,${180 + Math.random() * 60},80,${Math.min(1, s.life * 2)})`; c2.fillRect(s.x - 0.05, s.y - 0.05, 0.1, 0.1); }
+}
+let lastT = 0, acc = 0, rafId = 0, beepAt = 0;
+function frame(ts) {
+  rafId = requestAnimationFrame(frame);
+  const now = ts / 1000; const dt = Math.min(0.05, lastT ? now - lastT : 0.016); lastT = now; G.time += dt;
+  acc += dt; let steps = 0;
+  while (acc >= 1 / 120 && steps < 12) { simStep(1 / 120); acc -= 1 / 120; steps++; }
+  const v = G.view; if (!v) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#16191e'; ctx.fillRect(0, 0, cv.width, cv.height);
+  const sh = G.shake > 0 ? G.shake * 0.4 : 0;
+  const jx = sh ? (Math.random() - .5) * sh : 0, jy = sh ? (Math.random() - .5) * sh : 0;
+  ctx.setTransform(DPR * v.S, 0, 0, DPR * v.S, DPR * (v.ox + jx * v.S), DPR * (v.oy + jy * v.S));
+  drawWorld(ctx, G.time);
+  hud(); camPanel(G.time); engineSound(!G.won && document.getElementById('game').hidden === false);
+}
+function hud() {
+  document.getElementById('hTime').textContent = G.t.toFixed(1).replace('.', ',') + ' s';
+  document.getElementById('hScr').textContent = G.scratches;
+  document.getElementById('gear').textContent = G.gear;
+  document.getElementById('wheel').style.transform = `rotate(${(G.car.steer / CAR.MAXS) * 135}deg)`;
+  document.getElementById('wheelMode').textContent = G.inp.wheel !== null ? 'VAIRUOJI' : (SET.tilt && TILT.ok ? 'POLINKIS' : 'TEMPK');
+  document.getElementById('pedD').classList.toggle('on', !!(G.inp.gas || G.inp.ku));
+  document.getElementById('pedR').classList.toggle('on', !!(G.inp.rev || G.inp.kd));
+}
+
+// ======================= Galinio vaizdo kamera =======================
+const camEl = document.getElementById('cam'), camCv = document.getElementById('camCv'), camCtx = camCv.getContext('2d'), camVid = document.getElementById('camVideo');
+function placeCam() {
+  // Kamera rodoma priešingoje ekrano pusėje nei mašina, kad neuždengtų tikslo.
+  const v = G.view; if (!v) return;
+  const carY = v.oy + G.car.y * v.S, hudB = document.querySelector('.hud').getBoundingClientRect().bottom;
+  const ctrT = document.querySelector('.controls').getBoundingClientRect().top + 12, h = camEl.offsetHeight;
+  const top = carY < (hudB + ctrT) / 2 ? ctrT - h - 8 : hudB + 6;
+  camEl.style.top = Math.round(top) + 'px';
+}
+function camPanel(time) {
+  const show = G.gear === 'R' && !G.won;
+  if (camEl.hidden === show) camEl.hidden = !show;
+  if (!show) return;
+  placeCam();
+  const r = camEl.getBoundingClientRect(), d = DPR;
+  const W = Math.round(r.width * d), H = Math.round(r.height * d);
+  if (camCv.width !== W || camCv.height !== H) { camCv.width = W; camCv.height = H; }
+  const useAR = SET.ar && CAM.ok;
+  camVid.hidden = !useAR;
+  const c = camCtx, car = G.car, ca = Math.cos(car.a), sa = Math.sin(car.a);
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H);
+  const k = H / 6.2; // pikseliai metrui: matome ~6 m už mašinos
+  const rx = car.x - ca * CAR.L / 2, ry = car.y - sa * CAR.L / 2;
+  // pasaulis: „aukštyn“ panelėje = kryptis už mašinos
+  const rot = -Math.PI / 2 - (car.a + Math.PI);
+  const toPanel = (c2) => { c2.setTransform(1, 0, 0, 1, 0, 0); c2.translate(W / 2, H * 0.97); c2.scale(k, k); c2.rotate(rot); c2.translate(-rx, -ry); };
+  if (!useAR) {
+    c.save(); toPanel(c); drawWorld(c, time, { hidePlayer: true, blurScale: 0.6 }); c.restore();
+    // kameros „pojūtis“: tamsūs kraštai, melsvas atspalvis, linijos
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.fillStyle = 'rgba(40,80,140,.12)'; c.fillRect(0, 0, W, H);
+    const vg = c.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, W * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.6)'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
+    c.fillStyle = 'rgba(255,255,255,.03)'; for (let y = 0; y < H; y += 3 * d) c.fillRect(0, y, W, d);
+  } else {
+    c.fillStyle = 'rgba(0,0,0,.15)'; c.fillRect(0, 0, W, H);
+  }
+  // buferis apačioje
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = 'rgba(255,194,26,.85)'; rr(c, W * 0.18, H * 0.95, W * 0.64, H * 0.08, 6 * d); c.fill();
+  // kreipiamosios linijos: prognozuojama trajektorija su dabartiniu vairo kampu
+  const steer = car.steer;
+  const path = side => {
+    const pts = []; let s = { x: car.x, y: car.y, a: car.a, v: -1, steer };
+    for (let i = 0; i <= 30; i++) {
+      const sca = Math.cos(s.a), ssa = Math.sin(s.a);
+      const bx = s.x - sca * CAR.L / 2, by = s.y - ssa * CAR.L / 2;
+      pts.push([bx - ssa * side * CAR.W / 2, by + sca * side * CAR.W / 2]);
+      const hw = CAR.WB / 2; let qx = s.x - sca * hw, qy = s.y - ssa * hw;
+      qx -= sca * 0.1; qy -= ssa * 0.1; const na = s.a - 0.1 / CAR.WB * Math.tan(steer);
+      s = { x: qx + Math.cos(na) * hw, y: qy + Math.sin(na) * hw, a: na };
+    }
+    return pts;
+  };
+  c.save(); toPanel(c); c.lineCap = 'round';
+  const bands = [[0, 10, '#ff4d4d'], [10, 20, '#ffc21a'], [20, 30, '#3ddc84']];
+  for (const side of [-1, 1]) {
+    const pts = path(side);
+    for (const [a, b, col] of bands) {
+      c.strokeStyle = col; c.lineWidth = 0.09; c.beginPath(); c.moveTo(pts[a][0], pts[a][1]);
+      for (let i = a + 1; i <= b; i++) c.lineTo(pts[i][0], pts[i][1]); c.stroke();
+    }
+  }
+  // skersinės žymos 1 m, 2 m
+  const L1 = path(-1), R1 = path(1);
+  for (const [i, col] of [[10, '#ff4d4d'], [20, '#ffc21a']]) { c.strokeStyle = col; c.lineWidth = 0.07; c.beginPath(); c.moveTo(L1[i][0], L1[i][1]); c.lineTo(R1[i][0], R1[i][1]); c.stroke(); }
+  c.restore();
+  // atstumo juostos
+  const dist = rearDistance(car);
+  const bars = dist >= 3 ? 0 : Math.min(5, Math.ceil((3 - dist) / 0.6));
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  for (let i = 0; i < 5; i++) {
+    const col = i < 2 ? '#3ddc84' : i < 4 ? '#ffc21a' : '#ff4d4d';
+    c.fillStyle = i < bars ? col : 'rgba(255,255,255,.15)';
+    const bw = W * 0.05, bh = H * (0.12 + i * 0.05);
+    c.fillRect(W - (6 - i) * (bw + 4 * d) - 4 * d, H * 0.08 + H * 0.3 - bh, bw, bh);
+  }
+  c.fillStyle = '#f4f2ea'; c.font = `700 ${12 * d}px "JetBrains Mono", monospace`; c.textAlign = 'right';
+  c.fillText(dist >= 3 ? '> 3,0 m' : dist.toFixed(1).replace('.', ',') + ' m', W - 8 * d, H * 0.52);
+  // pypsėjimas ir vibracija
+  if (dist < 2.5 && car.v < -0.02) {
+    const interval = dist < 0.3 ? 0.09 : 0.1 + dist * 0.28;
+    if (time >= beepAt) { beepAt = time + interval; tone(dist < 0.3 ? 1250 : 1000, 0.06, 'sine', 0.06); vib(dist < 0.6 ? 25 : 12); }
+  }
+}
+
+// ======================= Įvestis =======================
+const keymap = { ArrowLeft: 'kl', KeyA: 'kl', ArrowRight: 'kr', KeyD: 'kr', ArrowUp: 'ku', KeyW: 'ku', ArrowDown: 'kd', KeyS: 'kd', Space: 'hand' };
+addEventListener('keydown', e => {
+  if (document.getElementById('game').hidden) return;
+  if (e.code === 'KeyR') { restart(); return; }
+  const k = keymap[e.code]; if (!k) return; e.preventDefault(); G.inp[k] = 1; audioInit();
+});
+addEventListener('keyup', e => { const k = keymap[e.code]; if (k) G.inp[k] = 0; });
+function holdButton(el, key) {
+  const ids = new Set();
+  el.addEventListener('pointerdown', e => { e.preventDefault(); ids.add(e.pointerId); try { el.setPointerCapture(e.pointerId); } catch {} G.inp[key] = 1; audioInit(); vib(6); });
+  const up = e => { ids.delete(e.pointerId); if (!ids.size) G.inp[key] = 0; };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+holdButton(document.getElementById('pedD'), 'gas');
+holdButton(document.getElementById('pedR'), 'rev');
+{ // vairas: tempk į šonus (arba suk aplink centrą)
+  const z = document.getElementById('wheelZone'); let pid = null, startX = 0, startAng = 0, base = 0;
+  const ang = e => { const r = z.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)); };
+  z.addEventListener('pointerdown', e => { if (pid !== null) return; e.preventDefault(); pid = e.pointerId; try { z.setPointerCapture(pid); } catch {} startX = e.clientX; startAng = ang(e); base = G.car ? G.car.steer / CAR.MAXS : 0; G.inp.wheel = base; audioInit(); });
+  z.addEventListener('pointermove', e => {
+    if (e.pointerId !== pid) return;
+    const byDrag = (e.clientX - startX) / 70, byRot = angNorm(ang(e) - startAng) / (Math.PI * 0.75);
+    const r = z.getBoundingClientRect(), dist = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
+    G.inp.wheel = clamp(base + (dist > r.width * 0.3 ? byRot : byDrag), -1, 1);
+  });
+  const up = e => { if (e.pointerId !== pid) return; pid = null; G.inp.wheel = null; };
+  z.addEventListener('pointerup', up); z.addEventListener('pointercancel', up);
+}
+
+// ======================= Ekranai =======================
+const $ = id => document.getElementById(id);
+let toastTimer = 0, bannerTimer = 0;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; t.style.opacity = 1; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.opacity = 0; setTimeout(() => t.hidden = true, 300); }, 1100); }
+function show(screen) {
+  $('menu').hidden = screen !== 'menu'; $('game').hidden = screen !== 'game';
+  cancelAnimationFrame(rafId);
+  if (screen === 'game') { lastT = 0; acc = 0; rafId = requestAnimationFrame(frame); }
+  else { engineSound(false); renderMenu(); }
+}
+function startLevel(i) {
+  show('game'); $('win').hidden = true;
+  requestAnimationFrame(() => {}); loadLevel(i);
+  const L = G.L; $('hName').textContent = (i + 1) + '. ' + L.name; $('hPlace').textContent = L.place;
+  $('bName').textContent = L.name; $('bTip').textContent = L.tip; const b = $('banner'); b.hidden = false; b.style.opacity = 1;
+  clearTimeout(bannerTimer); bannerTimer = setTimeout(() => { b.style.opacity = 0; setTimeout(() => b.hidden = true, 400); }, 2600);
+  Object.assign(G.inp, { wheel: null, kl: 0, kr: 0, ku: 0, kd: 0, gas: 0, rev: 0, hand: 0 });
+}
+function restart() { startLevel(G.li); }
+function win() {
+  G.won = true;
+  const s = starsFor(G.t, G.scratches, G.L.par), key = 'stars.' + G.li;
+  if (s > store.get(key, 0)) store.set(key, s);
+  const bk = 'best.' + G.li, best = store.get(bk, null); if (best === null || G.t < best) store.set(bk, Math.round(G.t * 10) / 10);
+  vib([20, 40, 60]); [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.25, 'triangle', 0.07), i * 110));
+  setTimeout(() => {
+    $('wPlace').textContent = (G.li + 1) + '. ' + G.L.name + ' · ' + G.L.place;
+    $('wStars').innerHTML = [0, 1, 2].map(i => `<span class="${i < s ? '' : 'off'}">★</span>`).join('');
+    $('wStars').setAttribute('aria-label', s + ' iš 3 žvaigždučių');
+    $('wTime').textContent = G.t.toFixed(1).replace('.', ',') + ' s'; $('wScr').textContent = G.scratches + ' įbr.'; $('wPar').textContent = 'Norma ' + G.L.par + ' s';
+    $('btnNext').hidden = G.li >= LEVELS.length - 1;
+    $('win').hidden = false;
+  }, 500);
+}
+function unlocked(i) { return i === 0 || store.get('stars.' + (i - 1), 0) > 0; }
+function renderMenu() {
+  const box = $('levels'); box.textContent = '';
+  let nextSet = false;
+  LEVELS.forEach((L, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'lv';
+    const s = store.get('stars.' + i, 0), open = unlocked(i);
+    if (open && !s && !nextSet) { b.classList.add('next'); nextSet = true; }
+    b.disabled = !open;
+    b.innerHTML = `<span class="n">${String(i + 1).padStart(2, '0')}</span><span class="nm"></span><span class="pl"></span><span class="st">${open ? [0, 1, 2].map(k => `<span class="${k < s ? '' : 'off'}">★</span>`).join('') : ''}</span>`;
+    b.querySelector('.nm').textContent = L.name; b.querySelector('.pl').textContent = L.place;
+    b.setAttribute('aria-label', `${i + 1}. ${L.name}, ${L.place}${open ? (s ? `, ${s} žvaigždutės` : '') : ', užrakinta'}`);
+    b.onclick = () => { audioInit(); startLevel(i); };
+    box.appendChild(b);
+  });
+  drawHero();
+}
+function drawHero() {
+  const h = $('hero'), r = h.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+  if (!r.width) return;
+  h.width = Math.round(r.width * d); h.height = Math.round(r.height * d);
+  const c = h.getContext('2d'), S = h.height / 7.5;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = '#383c42'; c.fillRect(0, 0, h.width, h.height);
+  const R = rng(7); noise(c, 0, 0, h.width, h.height, 9000, ['rgba(255,255,255,.06)', 'rgba(0,0,0,.14)'], R, 1.4 * d);
+  c.setTransform(S, 0, 0, S, 0, 0);
+  const wm = h.width / S;
+  c.strokeStyle = 'rgba(244,242,234,.85)'; c.lineWidth = 0.12;
+  for (let x = 0.4; x < wm; x += 2.7) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 5.2); c.stroke(); }
+  let i = 0;
+  for (let x = 1.75; x < wm; x += 2.7, i++) {
+    if (i === 2) continue;
+    drawCar(c, x, 2.7, (i % 2 ? -90 : 90) * DEG, COLORS[(i * 5) % COLORS.length], { pxm: S });
+  }
+  const sx = 1.75 + 2 * 2.7;
+  c.save(); c.shadowColor = '#4cc3ff'; c.shadowBlur = 16; c.strokeStyle = '#4cc3ff'; c.lineWidth = 0.14; c.setLineDash([0.6, 0.35]); c.strokeRect(sx - 1.3, 0.1, 2.6, 5.2); c.restore();
+  drawCar(c, sx + 0.6, 6.2, -70 * DEG, '#ffc21a', { pxm: S, steer: -0.4, player: true });
+  drawTreeCanopy(c, wm - 1.2, 6.4, 1.4, 5);
+}
+
+// ======================= Nustatymai =======================
+function seg(onId, offId, on) { $(onId).setAttribute('aria-pressed', String(on)); $(offId).setAttribute('aria-pressed', String(!on)); }
+$('steerTouch').onclick = () => { SET.tilt = false; seg('steerTilt', 'steerTouch', false); $('tiltHint').hidden = true; store.set('tilt', false); };
+$('steerTilt').onclick = async () => { seg('steerTilt', 'steerTouch', true); const ok = await enableTilt(); SET.tilt = ok; store.set('tilt', ok); if (!ok) seg('steerTilt', 'steerTouch', false); };
+$('arOff').onclick = () => { SET.ar = false; seg('arOn', 'arOff', false); $('arHint').hidden = true; disableCamera(); };
+$('arOn').onclick = async () => { seg('arOn', 'arOff', true); const ok = await enableCamera(); SET.ar = ok; if (!ok) seg('arOn', 'arOff', false); };
+$('sndOn').onclick = () => { SET.sound = true; store.set('sound', true); seg('sndOn', 'sndOff', true); audioInit(); };
+$('sndOff').onclick = () => { SET.sound = false; store.set('sound', false); seg('sndOn', 'sndOff', false); engineSound(false); };
+seg('sndOn', 'sndOff', SET.sound);
+if (store.get('tilt', false) && window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+  seg('steerTilt', 'steerTouch', true);
+  enableTilt().then(ok => { SET.tilt = ok; if (!ok) seg('steerTilt', 'steerTouch', false); });
+}
+$('btnBack').onclick = () => show('menu');
+$('btnRetry').onclick = restart;
+$('btnAgain').onclick = restart;
+$('btnMenu').onclick = () => show('menu');
+$('btnNext').onclick = () => startLevel(Math.min(LEVELS.length - 1, G.li + 1));
+addEventListener('resize', () => { if (!$('game').hidden) layout(false); else drawHero(); });
+
+// Testams ir derinimui (nekeičia žaidimo eigos).
+window.__parking = {
+  LEVELS, CAR, stepCar, spotState, hitsStatic, staticColliders, carBox, boxHit, circHit,
+  get G() { return G; }, startLevel, simStep,
+  setCar(x, y, a) { G.car = { x, y, a, v: 0, steer: 0 }; }
+};
+
+show('menu');
+})();
+</script>

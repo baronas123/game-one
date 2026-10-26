@@ -34,6 +34,7 @@ enum GameRegistry {
         PlanuMeistras.info,
         NaktinisGreitkelis.info,
         Sankryza.info,
+        ParkavimoMeistras.info,
         // @registry — scripts/new_game.sh naujus žaidimus įrašo virš šios eilutės
     ]
 }
