@@ -1,0 +1,7 @@
+# Xcode / SwiftPM
+.build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.swiftpm/xcode/
+Arkada.swiftpm/.swiftpm/

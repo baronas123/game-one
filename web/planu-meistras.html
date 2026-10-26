@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="lt">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Planų Meistras</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Planų Meistras">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Stardos+Stencil:wght@700&display=swap">
+<style>
+/* Layout: vienas ekranas – mėlynas brėžinio lapas; meniu slenka, žaidimas užima visą aukštį. Sąmoningai viena (tamsi) tema – brėžinio popierius. */
+:root {
+  --paper: #0d3473;
+  --paper-deep: #08214d;
+  --ink: #ffffff;
+  --ink-soft: rgba(255,255,255,.72);
+  --ink-faint: rgba(255,255,255,.12);
+  --grid: rgba(255,255,255,.06);
+  --accent: #ffd34d;
+  --stamp: #d81f29;
+  --ok: #3ddc84;
+  --surface: rgba(6,22,54,.82);
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --font-stamp: "Stardos Stencil", "Courier New", serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(180deg, var(--paper), var(--paper-deep));
+  background-size: 22px 22px, 22px 22px, 100% 100%;
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Meniu ---------- */
+#menu {
+  max-width: 560px; margin: 0 auto;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px;
+}
+.eyebrow { font: 600 12px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+h1 { margin: 0; font: 800 clamp(44px, 13vw, 64px)/.92 var(--font-display); letter-spacing: -.01em; text-transform: uppercase; text-wrap: balance; }
+.lead { margin: 0; color: var(--ink-soft); font-size: 15px; line-height: 1.55; max-width: 62ch; }
+.titleblock { display: flex; flex-direction: column; gap: 10px; }
+.cta { display: flex; flex-direction: column; gap: 10px; }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 15px 18px; border-radius: 4px; border: 2px solid var(--ink);
+  background: var(--ink); color: var(--paper-deep);
+  font: 700 17px/1 var(--font-body); letter-spacing: .01em;
+  transition: transform .12s ease;
+}
+.btn:active { transform: scale(.98); }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn .stars { color: var(--accent); letter-spacing: .1em; }
+
+.levels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.lv {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-height: 54px; border: 1px solid rgba(255,255,255,.35); border-radius: 3px; background: rgba(255,255,255,.05);
+  font: 600 16px/1 var(--font-mono); font-variant-numeric: tabular-nums;
+}
+.lv small { font-size: 10px; color: var(--accent); letter-spacing: .08em; min-height: 10px; }
+.lv.current { background: rgba(255,255,255,.16); border-color: var(--ink); }
+
+.howto { border: 1px dashed rgba(255,255,255,.4); padding: 16px; display: grid; gap: 10px; font-size: 14px; line-height: 1.45; }
+.howto p { margin: 0; display: grid; grid-template-columns: 26px 1fr; gap: 6px; }
+.howto b { font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+.install { font-size: 13px; color: var(--ink-soft); line-height: 1.5; border-left: 2px solid var(--accent); padding-left: 12px; }
+
+/* ---------- Žaidimas ---------- */
+#game { height: 100%; display: flex; flex-direction: column; }
+.hdr {
+  display: flex; align-items: center; gap: 10px;
+  padding-block: 10px 6px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.round {
+  width: 40px; height: 40px; flex: none; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.08);
+  display: grid; place-items: center; font: 600 17px/1 var(--font-mono);
+}
+.hdr .meta { flex: 1; min-width: 0; }
+.hdr .t { font: 800 22px/1 var(--font-display); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdr .s { font: 400 12px/1.4 var(--font-mono); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.chip { font: 600 14px/1 var(--font-mono); font-variant-numeric: tabular-nums; padding: 8px 10px; border: 1px solid rgba(255,255,255,.4); border-radius: 999px; }
+#stage { flex: 1; position: relative; min-height: 0; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+.tip {
+  position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  font: 400 12px/1 var(--font-mono); color: var(--ink-soft); pointer-events: none; white-space: nowrap;
+}
+
+/* ---------- Pergalė ---------- */
+#win {
+  position: fixed; inset: 0; z-index: 20; background: rgba(2,10,28,.55);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px;
+}
+.stamp {
+  color: var(--stamp); background: rgba(255,255,255,.92);
+  border: 4px solid var(--stamp); outline: 1.5px solid var(--stamp); outline-offset: 4px;
+  border-radius: 8px; padding: 12px 22px; text-align: center;
+  transform: rotate(-12deg); box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  animation: thump .42s cubic-bezier(.2,1.6,.4,1) both .15s;
+}
+.stamp .big { font: 700 36px/1 var(--font-stamp); letter-spacing: .06em; }
+.stamp .small { font: 600 11px/1.6 var(--font-mono); letter-spacing: .08em; }
+@keyframes thump { from { opacity: 0; transform: scale(2.6) rotate(-30deg); } to { opacity: 1; transform: scale(1) rotate(-12deg); } }
+.card {
+  width: 100%; max-width: 380px; background: var(--surface); border: 1px solid rgba(255,255,255,.35);
+  border-radius: 6px; padding: 22px; display: flex; flex-direction: column; gap: 14px; text-align: center;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  animation: rise .45s ease both .75s;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+.card h2 { margin: 0; font: 800 28px/1 var(--font-display); text-transform: uppercase; }
+.card p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+.bigstars { font-size: 34px; letter-spacing: .2em; color: var(--accent); }
+.bigstars .off { color: rgba(255,255,255,.25); }
+.stats { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+@media (prefers-reduced-motion: reduce) { .stamp, .card { animation: none; } }
+</style>
+
+<main id="menu">
+  <div class="titleblock">
+    <span class="eyebrow">Inventorizacijos byla · M 1:50</span>
+    <h1>Planų Meistras</h1>
+    <p class="lead">Inventorizatorius išbarstė buto planą. Sudėliok kambarius atgal į kontūrą – kiekvienas langelis yra 1,5 × 1,5 m, t. y. 2,25 m².</p>
+  </div>
+  <div class="cta">
+    <button class="btn" id="btnContinue" type="button">▶ Tęsti · Butas Nr. 1</button>
+    <button class="btn ghost" id="btnDaily" type="button">Dienos butas <span class="stars" id="dailyStars"></span></button>
+  </div>
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <span class="eyebrow">Butai</span>
+    <div class="levels" id="levels"></div>
+  </section>
+  <section class="howto" aria-label="Kaip žaisti">
+    <span class="eyebrow">Kaip žaisti</span>
+    <p><b>01</b><span>Tempk kambarį į plano kontūrą. Žalias šešėlis rodo, kur jis nusileis.</span></p>
+    <p><b>02</b><span>Bakstelėk kambarį – jis pasisuka 90°.</span></p>
+    <p><b>03</b><span>Užpildyk visą butą ir gausi antspaudą „KOPIJA TIKRA“.</span></p>
+    <p><b>04</b><span>Be užuominų ir greitai – trys žvaigždutės.</span></p>
+  </section>
+  <p class="install"><b>Į iPhone pradžios ekraną:</b> atsidaryk šią nuorodą Safari naršyklėje → mygtukas „Bendrinti“ (kvadratas su rodykle) → „Pridėti prie pradžios ekrano“.</p>
+</main>
+
+<div id="game" hidden>
+  <div class="hdr">
+    <button class="round" id="btnBack" type="button" aria-label="Atgal į meniu">‹</button>
+    <div class="meta">
+      <div class="t" id="gTitle">Butas Nr. 1</div>
+      <div class="s" id="gSub">0/0 kambarių</div>
+    </div>
+    <span class="chip" id="gTime">0:00</span>
+    <button class="round" id="btnHint" type="button" aria-label="Užuomina (minus viena žvaigždutė)">?</button>
+    <button class="round" id="btnReset" type="button" aria-label="Viską grąžinti į dėklą">↺</button>
+  </div>
+  <div id="stage">
+    <canvas id="cv" aria-label="Buto planas ir kambarių dėklas"></canvas>
+    <div class="tip">Tempk – padėti · Bakstelėk – pasukti</div>
+  </div>
+</div>
+
+<div id="win" hidden>
+  <div class="stamp" aria-label="Kopija tikra">
+    <div class="big">KOPIJA TIKRA</div>
+    <div class="small" id="stampDate">PLANŲ MEISTRAS</div>
+  </div>
+  <div class="card">
+    <h2 id="wTitle">Butas Nr. 1</h2>
+    <p>Planas atitinka natūrą. Inventorizatorius patenkintas.</p>
+    <div class="bigstars" id="wStars"></div>
+    <div class="stats">
+      <span class="chip" id="wTime">0:00</span>
+      <span class="chip" id="wMoves">0 ėj.</span>
+      <span class="chip" id="wHints">0 užuom.</span>
+    </div>
+    <button class="btn" id="btnNext" type="button">Kitas butas →</button>
+    <button class="btn ghost" id="btnMenu" type="button">Į meniu</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- Saugykla (gali neveikti privačiame lange – žaidimas veikia ir be jos) ----------
+  const store = {
+    get(k, d = 0) { try { const v = localStorage.getItem('pm.' + k); return v === null ? d : Number(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('pm.' + k, String(v)); } catch {} },
+    higher(k, v) { if (v > this.get(k, -Infinity)) this.set(k, v); }
+  };
+  const CELL_AREA = 2.25;
+  const lt = n => n.toFixed(2).replace('.', ',');
+  const clock = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  const pad = n => String(n).padStart(2, '0');
+  const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  const dayKey = () => today().replace(/-/g, '');
+  const vibrate = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch {} };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- Geometrija ----------
+  const key = c => c.x + ',' + c.y;
+  const nb = c => [{x:c.x+1,y:c.y},{x:c.x-1,y:c.y},{x:c.x,y:c.y+1},{x:c.x,y:c.y-1}];
+  const sortC = (a, b) => a.y - b.y || a.x - b.x;
+  const norm = cs => { const mx = Math.min(...cs.map(c => c.x)), my = Math.min(...cs.map(c => c.y)); return cs.map(c => ({x:c.x-mx, y:c.y-my})).sort(sortC); };
+  const rot = cs => { const h = Math.max(...cs.map(c => c.y)) + 1; return norm(cs.map(c => ({x:h-1-c.y, y:c.x}))); };
+  const dims = cs => ({ w: Math.max(...cs.map(c => c.x)) + 1, h: Math.max(...cs.map(c => c.y)) + 1 });
+  const labelCell = cs => {
+    const cx = cs.reduce((s, c) => s + c.x, 0) / cs.length, cy = cs.reduce((s, c) => s + c.y, 0) / cs.length;
+    return cs.reduce((b, c) => ((c.x-cx)**2 + (c.y-cy)**2 < (b.x-cx)**2 + (b.y-cy)**2 ? c : b), cs[0]);
+  };
+
+  // ---------- Deterministinis RNG: tas pats lygis visada vienodas ----------
+  function rng(seed) {
+    let a = seed >>> 0;
+    return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  }
+  const ri = (r, a, b) => a + Math.floor(r() * (b - a + 1));
+  const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
+  const shuffle = (r, arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  // ---------- Lygio generatorius (kontūras → skaidymas į kambarius; visada išsprendžiamas) ----------
+  function generate(number, title, d, seed) {
+    const r = rng(seed);
+    const w = Math.min(4 + Math.floor(d / 3), 7), h = Math.min(5 + Math.floor(d / 3), 9);
+    const maxPiece = Math.min(4 + Math.floor(d / 4), 7);
+    const out = new Map();
+    for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) out.set(key({x,y}), {x,y});
+    for (const [cx, cy] of shuffle(r, [[0,0],[1,0],[0,1],[1,1]]).slice(0, Math.min(Math.floor(d / 2), 3))) {
+      const nw = ri(r, 1, Math.max(1, Math.floor((w - 1) / 2))), nh = ri(r, 1, Math.max(1, Math.floor(h / 3)));
+      for (let dx = 0; dx < nw; dx++) for (let dy = 0; dy < nh; dy++) out.delete(key({x: cx ? w-1-dx : dx, y: cy ? h-1-dy : dy}));
+    }
+    const owner = new Map(); let regions = [];
+    const free = c => nb(c).filter(n => out.has(key(n)) && !owner.has(key(n)));
+    const order = [...out.values()].sort(sortC);
+    for (;;) {
+      const fr = order.filter(c => !owner.has(key(c)));
+      if (!fr.length) break;
+      const md = Math.min(...fr.map(c => free(c).length));
+      const start = pick(r, fr.filter(c => free(c).length === md));
+      const target = ri(r, 2, maxPiece), id = regions.length, reg = [start];
+      owner.set(key(start), id);
+      while (reg.length < target) {
+        const f = [...new Map(reg.flatMap(free).map(c => [key(c), c])).values()].sort(sortC);
+        if (!f.length) break;
+        const n = pick(r, f); reg.push(n); owner.set(key(n), id);
+      }
+      regions.push(reg);
+    }
+    for (let changed = true; changed;) {
+      changed = false;
+      for (let i = 0; i < regions.length; i++) {
+        if (regions[i].length !== 1) continue;
+        const ids = [...new Set(nb(regions[i][0]).map(n => owner.get(key(n))).filter(v => v !== undefined && v !== i))];
+        if (!ids.length) continue;
+        const t = ids.sort((a, b) => regions[a].length - regions[b].length)[0];
+        regions[t].push(regions[i][0]); regions[i] = []; changed = true; break;
+      }
+      if (changed) { regions = regions.filter(x => x.length); owner.clear(); regions.forEach((x, i) => x.forEach(c => owner.set(key(c), i))); }
+    }
+    const tl = reg => reg.slice().sort(sortC)[0];
+    regions.sort((a, b) => sortC(tl(a), tl(b)));
+    const big = ['Svetainė','Miegamasis','Virtuvė','Vaikų kambarys','Darbo kambarys','Valgomasis','Svečių kambarys'];
+    const small = ['Vonia','Koridorius','WC','Sandėliukas','Prieškambaris','Balkonas','Drabužinė','Katilinė'];
+    const names = []; let bi = 0, si = 0;
+    regions.map((x, i) => i).sort((a, b) => regions[b].length - regions[a].length).forEach(i => {
+      names[i] = regions[i].length >= 4 && bi < big.length ? big[bi++] : small[si++ % small.length];
+    });
+    const rooms = regions.map((reg, i) => ({
+      id: i, code: number + '-' + (i + 1), name: names[i],
+      sol: norm(reg), solOrigin: { x: Math.min(...reg.map(c => c.x)), y: Math.min(...reg.map(c => c.y)) },
+      hue: i / regions.length, area: reg.length * CELL_AREA, turns: ri(r, 0, 3)
+    }));
+    return { number, title, w, h, outline: new Set(out.keys()), outlineCells: [...out.values()], rooms, area: out.size * CELL_AREA };
+  }
+  const levelBp = n => generate(String(n), 'Butas Nr. ' + n, n, 0xB07A545 + n * 7919);
+  const dailyBp = () => generate('D', 'Dienos butas · ' + today(), 9, Math.imul(Number(dayKey()), 2654435761) >>> 0);
+
+  // ---------- Būsena ----------
+  const S = { screen: 'menu', mode: null, bp: null, pieces: [], moves: 0, hints: 0, start: 0, end: 0, drag: null, glow: null, glowUntil: 0 };
+  const elapsed = () => Math.floor(((S.end || Date.now()) - S.start) / 1000);
+  const stars = () => { let s = 3; if (S.hints >= 1) s--; if (S.hints >= 2) s--; if (elapsed() > S.pieces.length * 20) s--; return Math.max(1, s); };
+  const cellsOf = p => p.origin ? p.shape.map(c => ({x: c.x + p.origin.x, y: c.y + p.origin.y})) : [];
+
+  function newGame(mode, restore) {
+    S.mode = mode;
+    S.bp = mode.type === 'daily' ? dailyBp() : levelBp(mode.n);
+    S.pieces = S.bp.rooms.map(room => { let s = room.sol; for (let i = 0; i < room.turns; i++) s = rot(s); return { room, shape: s, origin: null, disp: null }; });
+    S.moves = 0; S.hints = 0; S.start = Date.now(); S.end = 0; S.drag = null;
+    if (restore && restore.pieces && restore.pieces.length === S.pieces.length) {
+      restore.pieces.forEach((rp, i) => { S.pieces[i].shape = rp.shape; S.pieces[i].origin = rp.origin; });
+      S.moves = restore.moves || 0; S.hints = restore.hints || 0; S.start = Date.now() - (restore.elapsed || 0) * 1000;
+    }
+    show('game');
+    $('gTitle').textContent = S.bp.title;
+    resize(); updateHeader();
+  }
+
+  function canPlace(shape, o, id) {
+    const taken = new Set();
+    S.pieces.forEach(p => { if (p.room.id !== id) cellsOf(p).forEach(c => taken.add(key(c))); });
+    return shape.every(c => { const k = key({x: c.x + o.x, y: c.y + o.y}); return S.bp.outline.has(k) && !taken.has(k); });
+  }
+  function changed() {
+    if (!S.end && S.pieces.every(p => p.origin)) { S.end = Date.now(); setTimeout(win, 450); }
+    updateHeader();
+  }
+  function place(p, o) { if (S.end || !canPlace(p.shape, o, p.room.id)) return false; p.origin = o; S.moves++; changed(); return true; }
+  function rotatePiece(p) {
+    if (S.end) return;
+    const s = rot(p.shape); p.shape = s;
+    if (p.origin) {
+      const o = p.origin;
+      p.origin = [[0,0],[-1,0],[0,-1],[1,0],[0,1],[-1,-1]].map(([dx, dy]) => ({x: o.x + dx, y: o.y + dy})).find(c => canPlace(s, c, p.room.id)) || null;
+    }
+    S.moves++; changed();
+  }
+  function hint() {
+    if (S.end) return;
+    const correct = p => { const a = cellsOf(p).map(key).sort().join(), b = p.room.sol.map(c => key({x: c.x + p.room.solOrigin.x, y: c.y + p.room.solOrigin.y})).sort().join(); return a === b; };
+    const p = S.pieces.find(q => !q.origin) || S.pieces.find(q => !correct(q));
+    if (!p) return;
+    const target = new Set(p.room.sol.map(c => key({x: c.x + p.room.solOrigin.x, y: c.y + p.room.solOrigin.y})));
+    S.pieces.forEach(q => { if (q !== p && cellsOf(q).some(c => target.has(key(c)))) q.origin = null; });
+    p.shape = p.room.sol; p.origin = { ...p.room.solOrigin }; S.hints++;
+    S.glow = p.room.id; S.glowUntil = Date.now() + 900; vibrate(20); changed();
+  }
+
+  // ---------- Išdėstymas ----------
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, L = null;
+  function resize() {
+    const r = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+    W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function layout() {
+    const bp = S.bp;
+    const cell = Math.floor(Math.min((W - 40) / bp.w, (H * 0.52) / bp.h, 64));
+    const board = { x: Math.round((W - cell * bp.w) / 2), y: 14, w: cell * bp.w, h: cell * bp.h };
+    const tray = { x: 16, y: board.y + board.h + 40, w: W - 32, h: Math.max(60, H - board.y - board.h - 70) };
+    const pcs = S.pieces.filter(p => !p.origin);
+    let res = { tc: cell * .3, pos: {} };
+    for (let f = 0.7; f >= 0.299; f -= 0.05) {
+      const tc = Math.floor(cell * f), gap = Math.max(10, tc * .5), rows = [[]];
+      let rw = 0;
+      for (const p of pcs) {
+        const d = dims(p.shape), sw = d.w * tc, sh = d.h * tc, row = rows[rows.length - 1];
+        if (row.length && rw + gap + sw > tray.w) { rows.push([]); rw = 0; }
+        rw += (rows[rows.length - 1].length ? gap : 0) + sw;
+        rows[rows.length - 1].push({ id: p.room.id, sw, sh });
+      }
+      const pos = {}; let y = tray.y;
+      for (const row of rows) {
+        if (!row.length) continue;
+        const rwid = row.reduce((s, q) => s + q.sw, 0) + gap * (row.length - 1), rh = Math.max(...row.map(q => q.sh));
+        let x = tray.x + (tray.w - rwid) / 2;
+        for (const q of row) { pos[q.id] = { x, y: y + (rh - q.sh) / 2 }; x += q.sw + gap; }
+        y += rh + gap;
+      }
+      res = { tc, pos };
+      if (y - gap <= tray.y + tray.h) break;
+    }
+    return { cell, board, tc: res.tc, tray: res.pos };
+  }
+  function targetOf(p) {
+    const d = dims(p.shape);
+    if (S.drag && S.drag.p === p) return { x: S.drag.x - S.drag.gx * d.w * L.cell, y: S.drag.y - S.drag.gy * d.h * L.cell, c: L.cell };
+    if (p.origin) return { x: L.board.x + p.origin.x * L.cell, y: L.board.y + p.origin.y * L.cell, c: L.cell };
+    const t = L.tray[p.room.id] || { x: 0, y: 0 };
+    return { x: t.x, y: t.y, c: L.tc };
+  }
+  function dropCell(p) {
+    const t = targetOf(p);
+    return { x: Math.round((t.x - L.board.x) / L.cell), y: Math.round((t.y - L.board.y) / L.cell) };
+  }
+
+  // ---------- Piešimas ----------
+  function edges(cells, c, ox, oy) {
+    const set = new Set(cells.map(key));
+    ctx.beginPath();
+    for (const q of cells) {
+      const x0 = ox + q.x * c, y0 = oy + q.y * c, x1 = x0 + c, y1 = y0 + c;
+      if (!set.has(key({x: q.x, y: q.y - 1}))) { ctx.moveTo(x0, y0); ctx.lineTo(x1, y0); }
+      if (!set.has(key({x: q.x, y: q.y + 1}))) { ctx.moveTo(x0, y1); ctx.lineTo(x1, y1); }
+      if (!set.has(key({x: q.x - 1, y: q.y}))) { ctx.moveTo(x0, y0); ctx.lineTo(x0, y1); }
+      if (!set.has(key({x: q.x + 1, y: q.y}))) { ctx.moveTo(x1, y0); ctx.lineTo(x1, y1); }
+    }
+  }
+  function fillCells(cells, c, ox, oy) { ctx.beginPath(); for (const q of cells) ctx.rect(ox + q.x * c, oy + q.y * c, c, c); ctx.fill(); }
+
+  function drawBoard() {
+    const { board: b, cell: c } = L, cells = S.bp.outlineCells, set = S.bp.outline;
+    ctx.fillStyle = 'rgba(255,255,255,.05)'; fillCells(cells, c, b.x, b.y);
+    ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = .7; ctx.beginPath();
+    for (const q of cells) {
+      const x0 = b.x + q.x * c, y0 = b.y + q.y * c;
+      if (set.has(key({x: q.x + 1, y: q.y}))) { ctx.moveTo(x0 + c, y0); ctx.lineTo(x0 + c, y0 + c); }
+      if (set.has(key({x: q.x, y: q.y + 1}))) { ctx.moveTo(x0, y0 + c); ctx.lineTo(x0 + c, y0 + c); }
+    }
+    ctx.stroke(); ctx.restore();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 5; ctx.lineCap = 'square'; edges(cells, c, b.x, b.y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = '600 11px "IBM Plex Mono", monospace'; ctx.textBaseline = 'top';
+    ctx.textAlign = 'left'; ctx.fillText(S.bp.number === 'D' ? 'DIENOS BUTAS' : 'BUTAS NR. ' + S.bp.number, b.x, b.y + b.h + 10);
+    ctx.textAlign = 'right'; ctx.fillText('M 1:50 · ' + lt(S.bp.area) + ' m²', b.x + b.w, b.y + b.h + 10);
+  }
+  function drawPiece(p) {
+    const d = p.disp, c = d.c, placed = p.origin && !(S.drag && S.drag.p === p), lifted = S.drag && S.drag.p === p && S.drag.moved;
+    const hue = Math.round((0.08 + p.room.hue * 0.85) * 360);
+    ctx.save();
+    if (lifted) { ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 8; }
+    if (S.glow === p.room.id && Date.now() < S.glowUntil) { ctx.shadowColor = '#ffd34d'; ctx.shadowBlur = 18; }
+    ctx.fillStyle = `hsla(${hue}, 100%, 77%, ${placed ? .30 : .55})`;
+    fillCells(p.shape, c, d.x, d.y);
+    ctx.restore();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = placed ? 2.5 : 2; ctx.lineCap = 'square';
+    edges(p.shape, c, d.x, d.y); ctx.stroke();
+    const lc = labelCell(p.shape), cx = d.x + (lc.x + .5) * c, cy = d.y + (lc.y + .5) * c;
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const fs = Math.max(8, c * .24);
+    ctx.font = `600 ${fs}px "IBM Plex Mono", monospace`;
+    if (c >= 30) {
+      ctx.fillText(p.room.code, cx, cy - fs * .55, c * 1.6);
+      ctx.font = `400 ${Math.max(7, c * .2)}px "IBM Plex Mono", monospace`;
+      ctx.fillText(lt(p.room.area), cx, cy + fs * .6, c * 1.6);
+    } else ctx.fillText(p.room.code, cx, cy, c * 1.4);
+  }
+  function frame() {
+    if (S.screen !== 'game') return;
+    L = layout();
+    ctx.clearRect(0, 0, W, H);
+    drawBoard();
+    const k = reduced ? 1 : .28;
+    for (const p of S.pieces) {
+      const t = targetOf(p);
+      if (!p.disp || (S.drag && S.drag.p === p)) p.disp = { ...t };
+      else { p.disp.x += (t.x - p.disp.x) * k; p.disp.y += (t.y - p.disp.y) * k; p.disp.c += (t.c - p.disp.c) * k; }
+    }
+    if (S.drag && S.drag.moved) {
+      const p = S.drag.p, o = dropCell(p);
+      if (canPlace(p.shape, o, p.room.id)) { ctx.fillStyle = 'rgba(61,220,132,.38)'; fillCells(p.shape, L.cell, L.board.x + o.x * L.cell, L.board.y + o.y * L.cell); }
+    }
+    const order = [...S.pieces.filter(p => p.origin), ...S.pieces.filter(p => !p.origin)].filter(p => !(S.drag && S.drag.p === p));
+    if (S.drag) order.push(S.drag.p);
+    order.forEach(drawPiece);
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- Valdymas ----------
+  function hit(x, y) {
+    const order = [...S.pieces.filter(p => p.origin), ...S.pieces.filter(p => !p.origin)].reverse();
+    return order.find(p => p.disp && p.shape.some(q => x >= p.disp.x + q.x * p.disp.c && x < p.disp.x + (q.x + 1) * p.disp.c && y >= p.disp.y + q.y * p.disp.c && y < p.disp.y + (q.y + 1) * p.disp.c));
+  }
+  const pt = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  cv.addEventListener('pointerdown', e => {
+    if (S.end || S.drag) return;
+    const { x, y } = pt(e), p = hit(x, y);
+    if (!p) return;
+    const d = dims(p.shape);
+    S.drag = { p, x, y, sx: x, sy: y, gx: (x - p.disp.x) / (d.w * p.disp.c), gy: (y - p.disp.y) / (d.h * p.disp.c), moved: false, pid: e.pointerId };
+    cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!S.drag || e.pointerId !== S.drag.pid) return;
+    const { x, y } = pt(e); S.drag.x = x; S.drag.y = y;
+    if (Math.hypot(x - S.drag.sx, y - S.drag.sy) > 8) S.drag.moved = true;
+  });
+  function endDrag(e, cancelled) {
+    if (!S.drag || e.pointerId !== S.drag.pid) return;
+    const d = S.drag, p = d.p;
+    if (cancelled) { S.drag = null; return; }
+    if (!d.moved) { S.drag = null; vibrate(8); rotatePiece(p); return; }
+    const o = dropCell(p);
+    const overBoard = d.x > L.board.x - L.cell && d.x < L.board.x + L.board.w + L.cell && d.y > L.board.y - L.cell && d.y < L.board.y + L.board.h + L.cell;
+    S.drag = null;
+    if (place(p, o)) vibrate(15);
+    else { if (overBoard) vibrate([10, 40, 10]); p.origin = null; changed(); }
+  }
+  cv.addEventListener('pointerup', e => endDrag(e, false));
+  cv.addEventListener('pointercancel', e => endDrag(e, true));
+  addEventListener('resize', () => { if (S.screen === 'game') resize(); });
+
+  // ---------- Ekranai ----------
+  const $ = id => document.getElementById(id);
+  let timer = null;
+  function show(screen) {
+    S.screen = screen;
+    $('menu').hidden = screen !== 'menu';
+    $('game').hidden = screen !== 'game';
+    $('win').hidden = true;
+    document.body.style.overflow = screen === 'game' ? 'hidden' : '';
+    clearInterval(timer);
+    if (screen === 'game') { timer = setInterval(updateHeader, 1000); requestAnimationFrame(() => { resize(); frame(); }); }
+    else renderMenu();
+  }
+  function updateHeader() {
+    if (!S.bp) return;
+    $('gSub').textContent = `${S.pieces.filter(p => p.origin).length}/${S.pieces.length} kambarių · ${lt(S.bp.area)} m²`;
+    $('gTime').textContent = clock(elapsed());
+  }
+  function renderMenu() {
+    const unlocked = Math.max(1, store.get('unlocked', 1));
+    $('btnContinue').textContent = '▶ Tęsti · Butas Nr. ' + unlocked;
+    const ds = store.get('daily.' + dayKey(), 0);
+    $('dailyStars').textContent = ds ? '★'.repeat(ds) : '';
+    const box = $('levels'); box.textContent = '';
+    for (let n = 1; n <= unlocked; n++) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'lv' + (n === unlocked ? ' current' : '');
+      const s = store.get('stars.' + n, 0);
+      b.innerHTML = `<span>${n}</span><small>${s ? '★'.repeat(s) : ''}</small>`;
+      b.setAttribute('aria-label', `Butas ${n}${s ? ', ' + s + ' žvaigždutės' : ''}`);
+      b.onclick = () => newGame({ type: 'level', n });
+      box.appendChild(b);
+    }
+  }
+  function win() {
+    const st = stars();
+    if (S.mode.type === 'level') { store.higher('unlocked', S.mode.n + 1); store.higher('stars.' + S.mode.n, st); }
+    else store.higher('daily.' + dayKey(), st);
+    vibrate([30, 60, 80]);
+    $('stampDate').textContent = 'PLANŲ MEISTRAS · ' + today();
+    $('wTitle').textContent = S.bp.title;
+    $('wStars').innerHTML = '★'.repeat(st) + `<span class="off">${'★'.repeat(3 - st)}</span>`;
+    $('wStars').setAttribute('aria-label', st + ' iš 3 žvaigždučių');
+    $('wTime').textContent = '⏱ ' + clock(elapsed());
+    $('wMoves').textContent = S.moves + ' ėj.';
+    $('wHints').textContent = S.hints + ' užuom.';
+    $('btnNext').hidden = S.mode.type !== 'level';
+    const w = $('win'); w.hidden = false;
+    w.querySelectorAll('.stamp, .card').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+  }
+
+  $('btnContinue').onclick = () => newGame({ type: 'level', n: Math.max(1, store.get('unlocked', 1)) });
+  $('btnDaily').onclick = () => newGame({ type: 'daily' });
+  $('btnBack').onclick = () => show('menu');
+  $('btnMenu').onclick = () => show('menu');
+  $('btnNext').onclick = () => newGame({ type: 'level', n: S.mode.n + 1 });
+  $('btnHint').onclick = hint;
+  $('btnReset').onclick = () => { if (S.end) return; S.pieces.forEach(p => p.origin = null); changed(); };
+
+  // ---------- Paleidimas (išsaugo partiją, kai puslapis atnaujinamas) ----------
+  window.claude?.hot?.snapshot?.(() => ({
+    screen: S.screen, mode: S.mode, moves: S.moves, hints: S.hints, elapsed: S.bp ? elapsed() : 0, solved: !!S.end,
+    pieces: S.pieces.map(p => ({ shape: p.shape, origin: p.origin }))
+  }));
+  function start(data) {
+    if (data && data.screen === 'game' && data.mode && !data.solved) newGame(data.mode, data);
+    else show('menu');
+  }
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
