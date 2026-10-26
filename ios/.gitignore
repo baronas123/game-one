@@ -5,3 +5,7 @@ DerivedData/
 xcuserdata/
 .swiftpm/xcode/
 Arkada.swiftpm/.swiftpm/
+# XcodeGen / install_iphone.sh
+build/
+Arkada.xcodeproj/
+Info-Arkada.plist

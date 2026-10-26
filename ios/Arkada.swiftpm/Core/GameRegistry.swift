@@ -32,6 +32,8 @@ enum GameRegistry {
     /// Visi Arkados žaidimai, rodomi meniu šia tvarka.
     static let all: [GameInfo] = [
         PlanuMeistras.info,
+        NaktinisGreitkelis.info,
+        Sankryza.info,
         // @registry — scripts/new_game.sh naujus žaidimus įrašo virš šios eilutės
     ]
 }

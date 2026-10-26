@@ -8,6 +8,17 @@ o kiekvienas žaidimas turi savo aplanką `Games/<Vardas>/`.
 |---|---|
 | **Planų Meistras** | Mėlyno brėžinio stiliaus galvosūkis: iš kambarių („45-1 / 6,75 m²“) sudėliok buto planą. Lygiai generuojami be galo, yra ir dienos iššūkis. Kai butas pilnas, uždedamas antspaudas „KOPIJA TIKRA“. |
 
+## Įdiegti į iPhone – viena komanda (Mac)
+
+```bash
+git clone https://github.com/baronas123/game-one ~/game-one   # pirmą kartą
+cd ~/game-one && git pull && ios/scripts/install_iphone.sh
+```
+
+Skriptas pats: įdiegia XcodeGen (jei reikia), sugeneruoja `Arkada.xcodeproj` iš `ios/project.yml`,
+suranda tavo Apple Development komandą (tą pačią, kuria pasirašytas b-finance), sukompiliuoja,
+įdiegia į prijungtą iPhone ir paleidžia. `ios/scripts/install_iphone.sh --sim` – tik patikrina, ar kompiliuojasi.
+
 ## Kaip paleisti
 
 Reikia **Mac su Xcode 15+** arba **Swift Playgrounds** (iPad / Mac).

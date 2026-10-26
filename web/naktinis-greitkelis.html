@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="lt">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Naktinis greitkelis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Greitkelis">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Monoton&family=Chakra+Petch:wght@400;600;700&display=swap">
+<style>
+/* Layout: vienas pilno ekrano drobės (canvas) vaizdas; HUD ir meniu – sluoksniai virš jo. Sąmoningai vienas tamsus „sintvei“ pasaulis. */
+:root {
+  --night: #07021a;
+  --violet: #2a0b4a;
+  --magenta: #ff3ea5;
+  --cyan: #2de2ff;
+  --amber: #ffb347;
+  --ink: #f4f0ff;
+  --ink-soft: rgba(244,240,255,.7);
+  --glass: rgba(10,4,30,.55);
+  --danger: #ff4d5e;
+  --sign: #0d7a4f;
+  --font-neon: "Monoton", "Chakra Petch", system-ui, sans-serif;
+  --font-ui: "Chakra Petch", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--night); color: var(--ink); font-family: var(--font-ui); overflow: hidden; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+#app { position: fixed; inset: 0; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+/* ---------- HUD ---------- */
+#hud { position: absolute; inset: 0; pointer-events: none; }
+.hud-top {
+  position: absolute; left: 0; right: 0; top: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+}
+.box { background: var(--glass); border: 1px solid rgba(255,255,255,.14); border-radius: 10px; padding: 6px 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.lbl { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.val { font-weight: 700; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+#time.low .val { color: var(--danger); animation: blink .5s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .45; } }
+.right { text-align: right; }
+#city {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  top: calc(env(safe-area-inset-top, 0px) + var(--mirror-bottom, 90px));
+  background: var(--sign); color: #fff; border: 2px solid #fff; border-radius: 6px;
+  padding: 4px 12px; font-weight: 700; font-size: 14px; letter-spacing: .04em; white-space: nowrap;
+  box-shadow: 0 4px 18px rgba(0,0,0,.4);
+}
+#banner {
+  position: absolute; left: 0; right: 0; top: 34%; text-align: center; pointer-events: none;
+  font: 400 clamp(30px, 10vw, 56px)/1.1 var(--font-neon); color: var(--ink);
+  text-shadow: 0 0 12px var(--magenta), 0 0 30px var(--magenta);
+  opacity: 0; transition: opacity .25s;
+}
+#banner small { display: block; font: 700 18px/1.4 var(--font-ui); color: var(--cyan); text-shadow: 0 0 10px var(--cyan); letter-spacing: .08em; }
+#banner.on { opacity: 1; }
+.hud-bottom {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
+}
+.speedo { min-width: 112px; }
+.speedo .val { font-size: 34px; }
+.speedo .unit { font-size: 12px; color: var(--ink-soft); margin-left: 4px; }
+.nbar { margin-top: 6px; height: 8px; border-radius: 6px; background: rgba(255,255,255,.12); overflow: hidden; }
+.nbar i { display: block; height: 100%; width: 40%; background: linear-gradient(90deg, var(--cyan), var(--magenta)); box-shadow: 0 0 10px var(--cyan); }
+#nitroBtn {
+  pointer-events: auto; touch-action: none;
+  width: 84px; height: 84px; border-radius: 50%; flex: none;
+  border: 2px solid var(--cyan); background: radial-gradient(circle at 50% 40%, rgba(45,226,255,.35), rgba(10,4,30,.7));
+  font-weight: 700; font-size: 18px; letter-spacing: .04em; color: #fff;
+  box-shadow: 0 0 18px rgba(45,226,255,.5), inset 0 0 14px rgba(45,226,255,.3);
+}
+#nitroBtn.on { background: radial-gradient(circle, rgba(255,62,165,.7), rgba(45,226,255,.4)); transform: scale(.95); }
+#nitroBtn small { display: block; font-size: 10px; font-weight: 400; color: var(--ink-soft); }
+#pauseBtn { pointer-events: auto; width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: var(--glass); font-weight: 700; }
+.steerhint { position: absolute; bottom: 30%; left: 0; right: 0; display: flex; justify-content: space-between; padding-inline: 18px; font-size: 30px; color: rgba(255,255,255,.22); transition: opacity .6s; }
+
+/* ---------- Meniu ---------- */
+.screen {
+  position: absolute; inset: 0; z-index: 5; overflow-y: auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center;
+  padding-block: calc(env(safe-area-inset-top, 0px) + 24px) calc(env(safe-area-inset-bottom, 0px) + 24px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: linear-gradient(180deg, rgba(7,2,26,.25), rgba(7,2,26,.78) 65%);
+}
+.title { font: 400 clamp(34px, 11vw, 72px)/1.05 var(--font-neon); color: #fff; margin: 0; text-wrap: balance;
+  text-shadow: 0 0 6px #fff, 0 0 18px var(--magenta), 0 0 42px var(--magenta); }
+.title span { display: block; color: var(--cyan); text-shadow: 0 0 6px #fff, 0 0 18px var(--cyan), 0 0 42px var(--cyan); }
+.sub { margin: 0; max-width: 34ch; color: var(--ink-soft); font-size: 15px; line-height: 1.5; }
+.go {
+  border: 0; border-radius: 999px; padding: 16px 44px; font-weight: 700; font-size: 20px; letter-spacing: .1em; text-transform: uppercase;
+  background: linear-gradient(90deg, var(--magenta), #ff7a59); color: #fff; box-shadow: 0 0 24px rgba(255,62,165,.6);
+}
+.go:active { transform: scale(.97); }
+.settings { display: grid; gap: 10px; width: 100%; max-width: 360px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--glass); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 10px 12px; text-align: left; }
+.row .k { font-size: 14px; font-weight: 600; }
+.row .h { font-size: 11px; color: var(--amber); margin-top: 2px; }
+.seg { display: flex; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; overflow: hidden; flex: none; }
+.seg button { border: 0; background: transparent; padding: 7px 12px; font-size: 13px; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--cyan); color: var(--night); }
+.best { font-size: 13px; color: var(--ink-soft); letter-spacing: .06em; }
+.best b { color: var(--amber); font-size: 16px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 360px; }
+.stats div { background: var(--glass); border-radius: 10px; padding: 10px 6px; }
+.stats b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+.newbest { color: var(--amber); font-weight: 700; letter-spacing: .12em; text-shadow: 0 0 12px var(--amber); }
+.keys { font-size: 12px; color: var(--ink-soft); }
+@media (prefers-reduced-motion: reduce) { #time.low .val { animation: none; } }
+</style>
+
+<div id="app">
+  <canvas id="cv" aria-label="Naktinis greitkelis – žaidimo vaizdas"></canvas>
+
+  <div id="hud" hidden>
+    <div class="hud-top">
+      <div class="box" id="time"><div class="lbl">Laikas</div><div class="val" id="timeV">40</div></div>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <div class="box right"><div class="lbl">Nuvažiuota</div><div class="val" id="distV">0,0</div></div>
+        <button id="pauseBtn" type="button" aria-label="Pauzė">II</button>
+      </div>
+    </div>
+    <div id="city">→ GRIGIŠKĖS 5,0 km</div>
+    <div id="banner"></div>
+    <div class="steerhint" id="steerHint"><span>◀</span><span>▶</span></div>
+    <div class="hud-bottom">
+      <div class="box speedo">
+        <div><span class="val" id="speedV">0</span><span class="unit">km/h</span></div>
+        <div class="lbl" style="margin-top:4px">Nitro</div>
+        <div class="nbar"><i id="nitroV"></i></div>
+      </div>
+      <button id="nitroBtn" type="button" aria-label="Nitro">N₂O<small id="nitroHint">laikyk</small></button>
+    </div>
+  </div>
+
+  <section class="screen" id="start">
+    <h1 class="title">Naktinis<span>greitkelis</span></h1>
+    <p class="sub">Vilnius → Klaipėda per naktį. Spėk iki kito miesto, kol nesibaigė laikas. Lenk mašinas, rink nitro balionus.</p>
+    <button class="go" id="goBtn" type="button">Važiuojam</button>
+    <div class="best" id="bestStart">Rekordas: <b>0,0 km</b></div>
+    <div class="settings">
+      <div class="row">
+        <div><div class="k">Valdymas</div><div class="h" id="tiltHint" hidden>Jutikliai šioje naršyklėje nepasiekiami</div></div>
+        <div class="seg" role="group" aria-label="Valdymas">
+          <button type="button" id="ctlTilt">Polinkis</button><button type="button" id="ctlTouch">Lietimas</button>
+        </div>
+      </div>
+      <div class="row">
+        <div><div class="k">Veidas veidrodėlyje</div><div class="h" id="camHint" hidden>Kamera šioje naršyklėje nepasiekiama</div></div>
+        <div class="seg" role="group" aria-label="Veidas veidrodėlyje">
+          <button type="button" id="camOn">Įj.</button><button type="button" id="camOff">Išj.</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="k">Garsas</div>
+        <div class="seg" role="group" aria-label="Garsas">
+          <button type="button" id="sndOn">Įj.</button><button type="button" id="sndOff">Išj.</button>
+        </div>
+      </div>
+    </div>
+    <p class="keys">Telefone: pakreipk arba laikyk kairę / dešinę ekrano pusę, supurtyk – nitro.<br>Kompiuteryje: ← → arba A D, tarpas – nitro, P – pauzė.</p>
+  </section>
+
+  <section class="screen" id="over" hidden>
+    <h2 class="title" style="font-size:clamp(30px,9vw,60px)">Laikas<span>baigėsi</span></h2>
+    <div class="newbest" id="newBest" hidden>★ NAUJAS REKORDAS ★</div>
+    <div class="stats">
+      <div><b id="oDist">0,0</b><span>km</span></div>
+      <div><b id="oCity">Vilnius</b><span>pasiekta</span></div>
+      <div><b id="oPass">0</b><span>aplenkta</span></div>
+    </div>
+    <div class="best" id="bestOver">Rekordas: <b>0,0 km</b></div>
+    <button class="go" id="againBtn" type="button">Dar kartą</button>
+    <button class="seg" id="menuBtn" type="button" style="padding:10px 22px;background:var(--glass)">Į meniu</button>
+  </section>
+
+  <section class="screen" id="paused" hidden>
+    <h2 class="title" style="font-size:clamp(30px,9vw,56px)">Pauzė</h2>
+    <button class="go" id="resumeBtn" type="button">Tęsti</button>
+    <button class="seg" id="quitBtn" type="button" style="padding:10px 22px;background:var(--glass)">Baigti važiavimą</button>
+  </section>
+
+  <video id="cam" playsinline muted hidden></video>
+  <div id="sa" aria-hidden="true" style="position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);pointer-events:none"></div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const cv = $('cv'), ctx = cv.getContext('2d');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- Saugykla ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('ng.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('ng.' + k, JSON.stringify(v)); } catch {} }
+  };
+  const settings = { control: store.get('control', 'tilt'), camera: store.get('camera', false), sound: store.get('sound', true) };
+  const kmText = km => km.toFixed(1).replace('.', ',');
+
+  // ---------- Konstantos (pseudo-3D, „OutRun“ tipo segmentų projekcija) ----------
+  const SEG = 200, RUMBLE = 3, DRAW = 220, ROADW = 2000, LANES = 3;
+  const STEP = 1 / 60, MAXS = SEG / STEP;                 // 12000 vnt./s
+  const ACCEL = MAXS / 4.5, DECEL = -MAXS / 5, BRAKE = -MAXS, OFFROAD_DECEL = -MAXS / 1.6, OFFROAD_LIMIT = MAXS / 3.2;
+  const CENTRIFUGAL = 0.3, CAR_W = 900 / ROADW, PLAYER_W = 900 / ROADW;
+  const FOV = 100, CAM_DEPTH = 1 / Math.tan((FOV / 2) * Math.PI / 180);
+  const UNITS_PER_KM = 40000, CP_GAP = 1100 * SEG;          // ~5,5 km tarp miestų
+  const CITIES = ['Grigiškės', 'Vievis', 'Elektrėnai', 'Kaišiadorys', 'Kaunas', 'Ariogala', 'Kryžkalnis', 'Rietavas', 'Gargždai', 'Klaipėda', 'Palanga', 'Šventoji'];
+  const COL = {
+    fog: '#3b0f52', groundA: '#120526', groundB: '#170830', grid: 'rgba(255,62,165,.55)',
+    roadA: '#1c1830', roadB: '#211c38', rumbleA: '#ff3ea5', rumbleB: '#f4f0ff', lane: '#e9e6ff'
+  };
+
+  // ---------- RNG (kelias kaskart toks pat – galima išmokti posūkius) ----------
+  function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // ---------- Kelias ----------
+  let segments = [], trackLength = 0;
+  const easeIn = (a, b, p) => a + (b - a) * p * p;
+  const easeInOut = (a, b, p) => a + (b - a) * ((-Math.cos(p * Math.PI) / 2) + 0.5);
+  const lastY = () => segments.length ? segments[segments.length - 1].p2.world.y : 0;
+  function addSegment(curve, y) {
+    const n = segments.length;
+    segments.push({
+      index: n, curve, sprites: [], cars: [], clip: 0,
+      p1: { world: { y: lastY(), z: n * SEG }, camera: {}, screen: {} },
+      p2: { world: { y, z: (n + 1) * SEG }, camera: {}, screen: {} }
+    });
+  }
+  function addRoad(enter, hold, leave, curve, hill) {
+    const sy = lastY(), ey = sy + hill * SEG, total = enter + hold + leave;
+    for (let n = 0; n < enter; n++) addSegment(easeIn(0, curve, n / enter), easeInOut(sy, ey, n / total));
+    for (let n = 0; n < hold; n++) addSegment(curve, easeInOut(sy, ey, (enter + n) / total));
+    for (let n = 0; n < leave; n++) addSegment(easeInOut(curve, 0, n / leave), easeInOut(sy, ey, (enter + hold + n) / total));
+  }
+  function buildRoad() {
+    segments = [];
+    const r = rng(0xA1A1);
+    addRoad(40, 60, 40, 0, 0);
+    while (segments.length < 3200) {
+      const len = [25, 50, 75][Math.floor(r() * 3)];
+      const curve = r() < 0.25 ? 0 : (r() < 0.5 ? -1 : 1) * [2, 3, 4, 6][Math.floor(r() * 4)];
+      const hill = r() < 0.4 ? 0 : (r() < 0.5 ? -1 : 1) * [10, 20, 40][Math.floor(r() * 3)];
+      const clampedHill = Math.max(-60, Math.min(60, lastY() / SEG + hill)) - lastY() / SEG;
+      addRoad(len, len, len, curve, clampedHill);
+    }
+    addRoad(50, 50, 50, 0, -lastY() / SEG);           // grįžtam į 0 aukštį, kad ratas susijungtų
+    trackLength = segments.length * SEG;
+    // Dekoracijos
+    for (let i = 20; i < segments.length; i += 12) {
+      segments[i].sprites.push({ type: 'lamp', offset: -1.25 }, { type: 'lamp', offset: 1.25 });
+    }
+    for (let i = 10; i < segments.length; i += 3) {
+      const side = r() < 0.5 ? -1 : 1;
+      segments[i].sprites.push({ type: 'pine', offset: side * (1.7 + r() * 2.8), s: 0.7 + r() * 0.7 });
+      if (r() < 0.5) segments[i].sprites.push({ type: 'pine', offset: -side * (2.0 + r() * 3), s: 0.7 + r() * 0.7 });
+    }
+    for (let i = 300; i < segments.length; i += 420 + Math.floor(r() * 200)) {
+      segments[i].sprites.push({ type: 'billboard', offset: (r() < 0.5 ? -1 : 1) * 2.1, text: ['ARKADA', 'KAVA 24/7', 'NITRO', 'CEPELINAI'][Math.floor(r() * 4)] });
+    }
+    for (let i = 120; i < segments.length; i += 70 + Math.floor(r() * 60)) {
+      const lane = [-0.66, 0, 0.66][Math.floor(r() * 3)];
+      segments[i].sprites.push({ type: 'can', offset: lane, collected: -1 });
+    }
+  }
+  const findSegment = z => segments[Math.floor(z / SEG) % segments.length];
+  const wrap = (v, max) => { while (v >= max) v -= max; while (v < 0) v += max; return v; };
+
+  // ---------- Būsena ----------
+  const S = {
+    mode: 'menu', position: 0, speed: 0, playerX: 0, timeLeft: 40, nitro: 0.4, nitroOn: false, nitroBurst: 0,
+    distance: 0, cp: 0, passed: 0, lap: 0, shake: 0, crashFlash: 0, countdown: 0, steerVis: 0, t: 0,
+    cars: [], banner: { text: '', sub: '', until: 0 }
+  };
+  const input = { left: false, right: false, nitroKey: false, nitroTouch: false, brake: false, touches: new Map(), tilt: 0, tiltLive: false };
+
+  function resetCars(count) {
+    S.cars = [];
+    const r = rng(Date.now() & 0xffff);
+    const colors = ['#ff3ea5', '#2de2ff', '#ffd34d', '#7cff6b', '#b388ff', '#ff7a59', '#e8e8f0'];
+    for (let i = 0; i < count; i++) addCar(r, colors, 3000 + Math.floor(r() * (segments.length - 3000)) * SEG);
+  }
+  function addCar(r, colors, z) {
+    S.cars.push({
+      z, offset: [-0.66, 0, 0.66][Math.floor(r() * 3)] + (r() - 0.5) * 0.1,
+      speed: MAXS * (0.25 + r() * 0.3), color: colors[Math.floor(r() * colors.length)],
+      kind: r() < 0.2 ? 'truck' : 'car', passedLap: -1
+    });
+  }
+
+  // ---------- Ekrano matmenys ----------
+  let W = 0, H = 0, DPR = 1, HORIZON = 0, K = 0, CAMH = 1000, PLAYER_Z = 0;
+  const layers = {};
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const portrait = H > W;
+    HORIZON = Math.round(H * (portrait ? 0.43 : 0.47));
+    K = (H - HORIZON) * (portrait ? 0.74 : 0.86);  // žaidėjo mašina virš apatinio HUD
+    const halfRoadPx = W * (portrait ? 0.56 : 0.4);  // kelio pusplotis prie žaidėjo
+    CAMH = ROADW * K / halfRoadPx;
+    PLAYER_Z = CAMH * CAM_DEPTH;
+    buildLayers();
+    const m = mirrorRect(), mirrorBottom = Math.round(m.y + m.h + 12 - safeTop());
+    document.documentElement.style.setProperty('--mirror-bottom', mirrorBottom + 'px');
+  }
+
+  // Fono sluoksniai piešiami vieną kartą (dangus, saulė, kalnai, miestas)
+  function buildLayers() {
+    const r = rng(7);
+    const mk = (w, h) => { const c = document.createElement('canvas'); c.width = Math.round(w * DPR); c.height = Math.round(h * DPR); const g = c.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, 0, 0); return [c, g]; };
+    // dangus
+    const [sky, g] = mk(W, HORIZON + 2);
+    const gr = g.createLinearGradient(0, 0, 0, HORIZON);
+    gr.addColorStop(0, '#05010f'); gr.addColorStop(0.45, '#1d0a3d'); gr.addColorStop(0.78, '#6b1a6e'); gr.addColorStop(0.93, '#ff3e88'); gr.addColorStop(1, '#ffb347');
+    g.fillStyle = gr; g.fillRect(0, 0, W, HORIZON + 2);
+    for (let i = 0; i < 140; i++) { g.fillStyle = `rgba(255,255,255,${0.2 + r() * 0.7})`; const s = r() < 0.1 ? 2 : 1; g.fillRect(r() * W, r() * HORIZON * 0.6, s, s); }
+    // saulė su juostomis
+    const R = Math.min(W, H) * 0.22, cx = W / 2, cy = HORIZON - R * 0.35;
+    const [sun, sg] = mk(R * 2 + 4, R * 2 + 4);
+    const sgr = sg.createLinearGradient(0, 0, 0, R * 2);
+    sgr.addColorStop(0, '#fff3a8'); sgr.addColorStop(0.5, '#ffb347'); sgr.addColorStop(1, '#ff2f8e');
+    sg.fillStyle = sgr; sg.beginPath(); sg.arc(R + 2, R + 2, R, 0, Math.PI * 2); sg.fill();
+    sg.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 7; i++) { const y = R * (1.0 + i * 0.14), h = 1.5 + i * 1.6; sg.fillRect(0, y, R * 2 + 4, h); }
+    g.save(); g.shadowColor = '#ff3e88'; g.shadowBlur = 60; g.drawImage(sun, cx - R - 2, cy - R - 2, R * 2 + 4, R * 2 + 4); g.restore();
+    layers.sky = sky;
+    // kalnai (2 pločio ekranai, kartojasi)
+    const LW = Math.max(W, 600) * 2;
+    const mountains = (hMax, fill, rim, seed) => {
+      const [c, mg] = mk(LW, HORIZON + 2), rr = rng(seed);
+      mg.beginPath(); mg.moveTo(0, HORIZON + 2);
+      let x = 0; const pts = [];
+      while (x <= LW) { pts.push([x, HORIZON - (0.25 + rr() * 0.75) * hMax]); x += 30 + rr() * 70; }
+      pts[pts.length - 1][1] = pts[0][1]; pts[pts.length - 1][0] = LW;
+      pts.forEach(([px, py]) => mg.lineTo(px, py)); mg.lineTo(LW, HORIZON + 2); mg.closePath();
+      mg.fillStyle = fill; mg.fill();
+      mg.strokeStyle = rim; mg.lineWidth = 1.5; mg.beginPath(); pts.forEach(([px, py], i) => i ? mg.lineTo(px, py) : mg.moveTo(px, py)); mg.stroke();
+      return c;
+    };
+    layers.far = mountains(HORIZON * 0.28, '#2a0d49', 'rgba(255,62,165,.55)', 11);
+    // miestas
+    const [city, cg] = mk(LW, HORIZON + 2), rc = rng(23);
+    let bx = 0;
+    while (bx < LW) {
+      const bw = 14 + rc() * 34, bh = HORIZON * (0.04 + rc() * (rc() < 0.15 ? 0.22 : 0.1));
+      if (rc() < 0.75) {
+        cg.fillStyle = '#12052a'; cg.fillRect(bx, HORIZON - bh, bw, bh + 2);
+        for (let wy = HORIZON - bh + 4; wy < HORIZON - 3; wy += 5) for (let wx = bx + 3; wx < bx + bw - 3; wx += 5)
+          if (rc() < 0.22) { cg.fillStyle = rc() < 0.7 ? 'rgba(255,200,120,.8)' : 'rgba(45,226,255,.8)'; cg.fillRect(wx, wy, 2, 2); }
+        if (bh > HORIZON * 0.18) { cg.fillStyle = '#ff3e88'; cg.fillRect(bx + bw / 2 - 1, HORIZON - bh - 8, 2, 8); }
+      }
+      bx += bw + rc() * 8;
+    }
+    layers.city = city; layers.LW = LW;
+  }
+
+  // ---------- Projekcija ----------
+  function project(p, camX, camY, camZ, worldX) {
+    p.camera.x = (worldX || 0) - camX; p.camera.y = p.world.y - camY; p.camera.z = p.world.z - camZ;
+    p.screen.scale = CAM_DEPTH / p.camera.z;
+    p.screen.x = W / 2 + p.screen.scale * p.camera.x * K;
+    p.screen.y = HORIZON - p.screen.scale * p.camera.y * K;
+    p.screen.w = p.screen.scale * ROADW * K;
+  }
+
+  // ---------- Atnaujinimas ----------
+  let skyOffset = 0, farOffset = 0, cityOffset = 0;
+  function update(dt) {
+    S.t += dt;
+    if (S.mode === 'countdown') { S.countdown -= dt; if (S.countdown <= 0) { S.mode = 'play'; showBanner('VAŽIUOJAM!', '', 0.9); } }
+    const playing = S.mode === 'play', ending = S.mode === 'ending';
+    const playerSeg = findSegment(S.position + PLAYER_Z);
+    const speedPct = S.speed / MAXS;
+    const dx = dt * 2.2 * Math.min(1, speedPct + 0.15);
+
+    // nitro
+    if (S.nitroBurst > 0) S.nitroBurst -= dt;
+    const wantNitro = playing && (input.nitroKey || input.nitroTouch || S.nitroBurst > 0) && S.nitro > 0;
+    S.nitroOn = wantNitro;
+    if (wantNitro) S.nitro = Math.max(0, S.nitro - dt * 0.33);
+    const maxSpeed = MAXS * (S.nitroOn ? 1.45 : 1);
+
+    // vairavimas: lietimas/klaviatūra arba polinkis
+    let steer = 0;
+    if (input.left) steer -= 1;
+    if (input.right) steer += 1;
+    for (const side of input.touches.values()) steer += side;
+    steer = Math.max(-1, Math.min(1, steer));
+    if (steer === 0 && settings.control === 'tilt' && input.tiltLive) steer = input.tilt;
+    if (playing || ending) S.playerX += dx * steer;
+    S.steerVis += (steer - S.steerVis) * Math.min(1, dt * 10);
+    S.playerX -= dx * speedPct * playerSeg.curve * CENTRIFUGAL;
+
+    // greitis
+    if (playing) S.speed += (input.brake ? BRAKE : ACCEL * (S.nitroOn ? 2 : 1)) * dt;
+    else S.speed += (ending ? BRAKE * 0.35 : DECEL) * dt;
+    if (S.speed > maxSpeed) S.speed += DECEL * 2 * dt;
+    if ((S.playerX < -1 || S.playerX > 1) && S.speed > OFFROAD_LIMIT) S.speed += OFFROAD_DECEL * dt;
+    S.playerX = Math.max(-2.4, Math.min(2.4, S.playerX));
+    S.speed = Math.max(0, Math.min(S.speed, MAXS * 1.5));
+
+    // susidūrimai su mašinomis ir nitro balionai
+    if (playing) {
+      for (const car of S.cars) {
+        const dz = wrap(car.z - (S.position + PLAYER_Z), trackLength);
+        if (dz < SEG * 0.9 && S.speed > car.speed && Math.abs(car.offset - S.playerX) < (CAR_W + PLAYER_W) * 0.42 * (car.kind === 'truck' ? 1.15 : 1)) {
+          S.speed = car.speed * 0.55;
+          const old = S.position;
+          S.position = wrap(car.z - PLAYER_Z - SEG * 1.2, trackLength);
+          let back = S.position - old;
+          if (back > trackLength / 2) back -= trackLength; else if (back < -trackLength / 2) back += trackLength;
+          S.distance += back;
+          crash(); break;
+        }
+      }
+      for (const sp of playerSeg.sprites) {
+        if (sp.type === 'can' && sp.collected !== S.lap && Math.abs(sp.offset - S.playerX) < 0.32) {
+          sp.collected = S.lap; S.nitro = Math.min(1, S.nitro + 0.34); sfx('pickup'); flashPickup = 0.35;
+        }
+      }
+    }
+
+    // judėjimas
+    const before = S.position;
+    S.position = wrap(S.position + S.speed * dt, trackLength);
+    if (S.position < before) S.lap++;
+    S.distance += S.speed * dt;
+
+    // eismas
+    for (const car of S.cars) {
+      const prevRel = wrap(car.z - (S.position + PLAYER_Z), trackLength);
+      car.z = wrap(car.z + car.speed * dt, trackLength);
+      const rel = wrap(car.z - (S.position + PLAYER_Z), trackLength);
+      if (playing && prevRel < trackLength / 2 && rel > trackLength / 2 && rel > trackLength - SEG * 20) S.passed++;
+    }
+
+    // laikas ir miestai
+    if (playing) {
+      S.timeLeft -= dt;
+      const reached = Math.floor(S.distance / CP_GAP);
+      if (reached > S.cp) {
+        S.cp = reached;
+        const bonus = Math.max(14, Math.round(30 - S.cp * 1.4));
+        S.timeLeft += bonus;
+        showBanner(cityName(S.cp - 1).toUpperCase(), `+${bonus} s`, 1.8);
+        sfx('checkpoint');
+        if (S.cars.length < 90) { const r = rng(S.cp * 99); for (let i = 0; i < 6; i++) addCar(r, ['#ff3ea5', '#2de2ff', '#ffd34d', '#b388ff'], wrap(S.position + (60 + i * 40) * SEG, trackLength)); }
+      }
+      if (S.timeLeft <= 0) { S.timeLeft = 0; S.mode = 'ending'; sfx('end'); }
+    }
+    if (ending && S.speed < 200) gameOver();
+
+    // fono paralaksas
+    skyOffset += playerSeg.curve * speedPct * dt * 0.001;
+    farOffset += playerSeg.curve * speedPct * dt * 18;
+    cityOffset += playerSeg.curve * speedPct * dt * 32;
+    if (S.shake > 0) S.shake -= dt;
+    if (S.crashFlash > 0) S.crashFlash -= dt;
+    if (flashPickup > 0) flashPickup -= dt;
+    engineSound();
+  }
+  let flashPickup = 0;
+  const cityName = i => CITIES[i % CITIES.length] + (i >= CITIES.length ? ` · ${Math.floor(i / CITIES.length) + 1} ratas` : '');
+
+  function crash() {
+    S.shake = reduced ? 0 : 0.45; S.crashFlash = 0.22; sfx('crash');
+    try { navigator.vibrate && navigator.vibrate(80); } catch {}
+  }
+
+  // ---------- Piešimas ----------
+  function render() {
+    const shakeX = S.shake > 0 ? (Math.random() - 0.5) * 14 * S.shake : 0, shakeY = S.shake > 0 ? (Math.random() - 0.5) * 10 * S.shake : 0;
+    ctx.save(); ctx.translate(shakeX, shakeY);
+    // fonas
+    ctx.drawImage(layers.sky, 0, 0, W, HORIZON + 2);
+    drawLayer(layers.far, farOffset, 0);
+    drawLayer(layers.city, cityOffset, 0);
+
+    // kelias (iš arti į toli), su kalvų „kirpimu“
+    const base = findSegment(S.position), basePct = (S.position % SEG) / SEG;
+    const playerSeg = findSegment(S.position + PLAYER_Z), playerPct = ((S.position + PLAYER_Z) % SEG) / SEG;
+    const playerY = playerSeg.p1.world.y + (playerSeg.p2.world.y - playerSeg.p1.world.y) * playerPct;
+    let maxy = H, x = 0, dx = -(base.curve * basePct);
+    const camX = S.playerX * ROADW, camY = playerY + CAMH;
+    const drawn = [];
+    for (let n = 0; n < DRAW; n++) {
+      const seg = segments[(base.index + n) % segments.length];
+      const looped = seg.index < base.index, camZ = S.position - (looped ? trackLength : 0);
+      // x – sukauptas kreivės poslinkis: p1 naudoja x, p2 – x + dx
+      project(seg.p1, camX, camY, camZ, x);
+      project(seg.p2, camX, camY, camZ, x + dx);
+      x += dx; dx += seg.curve;
+      seg.clip = maxy; seg.fog = Math.min(1, Math.pow(n / DRAW, 1.6) * 1.15);
+      drawn.push(seg);
+      if (seg.p1.camera.z <= CAM_DEPTH || seg.p2.screen.y >= seg.p1.screen.y || seg.p2.screen.y >= maxy) continue;
+      drawSegment(seg, n);
+      maxy = seg.p1.screen.y;
+    }
+
+    // objektai (iš toli į arti)
+    const carsBySeg = new Map();
+    for (const car of S.cars) { const i = Math.floor(car.z / SEG) % segments.length; (carsBySeg.get(i) || carsBySeg.set(i, []).get(i)).push(car); }
+    for (let n = drawn.length - 1; n > 0; n--) {
+      const seg = drawn[n];
+      if (seg.p1.camera.z <= CAM_DEPTH) continue;
+      const sc = seg.p1.screen.scale * K;
+      for (const sp of seg.sprites) {
+        if (sp.type === 'can' && sp.collected === S.lap) continue;
+        const sx = seg.p1.screen.x + sc * sp.offset * ROADW;
+        drawSprite(sp, sx, seg.p1.screen.y, sc, seg.clip, seg.fog);
+      }
+      drawGantry(seg, sc);
+      const cars = carsBySeg.get(seg.index);
+      if (cars) for (const car of cars) {
+        const pct = (car.z % SEG) / SEG;
+        const s = (seg.p1.screen.scale + (seg.p2.screen.scale - seg.p1.screen.scale) * pct) * K;
+        const cx = seg.p1.screen.x + (seg.p2.screen.x - seg.p1.screen.x) * pct + s * car.offset * ROADW;
+        const cy = seg.p1.screen.y + (seg.p2.screen.y - seg.p1.screen.y) * pct;
+        const w = s * (car.kind === 'truck' ? 1050 : 900);
+        if (w < 2) continue;
+        withClip(seg.clip, () => drawCar(cx, cy, w, car.color, car.kind, seg.fog, false, 0));
+      }
+    }
+
+    // nitro greičio linijos
+    if (S.nitroOn) speedLines();
+    // žaidėjas
+    const pw = (ROADW * K / CAMH) * (900 / ROADW) * 1.28;
+    const bounce = S.speed > 0 ? Math.sin(S.t * 30) * 1.2 * (S.speed / MAXS) : 0;
+    drawCar(W / 2 + S.steerVis * 4, HORIZON + K + bounce, pw, '#ff3ea5', 'player', 0, true, S.steerVis);
+    ctx.restore();
+
+    // efektai virš visko
+    if (S.crashFlash > 0) { ctx.fillStyle = `rgba(255,40,70,${S.crashFlash})`; ctx.fillRect(0, 0, W, H); }
+    if (flashPickup > 0) { ctx.fillStyle = `rgba(45,226,255,${flashPickup * 0.4})`; ctx.fillRect(0, 0, W, H); }
+    const vg = ctx.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.35, W / 2, H * 0.55, Math.max(W, H) * 0.8);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, S.nitroOn ? 'rgba(45,226,255,.28)' : 'rgba(0,0,0,.45)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    if (S.mode !== 'menu' && S.mode !== 'over') drawMirror();
+    if (S.mode === 'countdown') drawCountdown();
+  }
+
+  function drawLayer(img, offset, y) {
+    const lw = layers.LW; let ox = ((offset % lw) + lw) % lw;
+    ctx.drawImage(img, -ox, y, lw, HORIZON + 2); ctx.drawImage(img, lw - ox, y, lw, HORIZON + 2);
+  }
+  function withClip(clipY, fn) {
+    if (clipY >= H) { fn(); return; }
+    ctx.save(); ctx.beginPath(); ctx.rect(-50, -50, W + 100, clipY + 50); ctx.clip(); fn(); ctx.restore();
+  }
+  function poly(x1, y1, x2, y2, x3, y3, x4, y4, c) { ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x4, y4); ctx.closePath(); ctx.fill(); }
+
+  function drawSegment(seg, n) {
+    const p1 = seg.p1.screen, p2 = seg.p2.screen, light = Math.floor(seg.index / RUMBLE) % 2 === 0;
+    const y1 = Math.ceil(p1.y), y2 = Math.floor(p2.y);
+    ctx.fillStyle = light ? COL.groundA : COL.groundB; ctx.fillRect(0, y2, W, y1 - y2 + 1);
+    if (seg.index % 6 === 0) { ctx.fillStyle = COL.grid; ctx.globalAlpha = 1 - seg.fog; ctx.fillRect(0, y2, W, Math.max(1, (y1 - y2) * 0.12)); ctx.globalAlpha = 1; }
+    const r1 = p1.w / 6, r2 = p2.w / 6;
+    poly(p1.x - p1.w - r1, y1, p1.x - p1.w, y1, p2.x - p2.w, y2, p2.x - p2.w - r2, y2, light ? COL.rumbleA : COL.rumbleB);
+    poly(p1.x + p1.w + r1, y1, p1.x + p1.w, y1, p2.x + p2.w, y2, p2.x + p2.w + r2, y2, light ? COL.rumbleA : COL.rumbleB);
+    poly(p1.x - p1.w, y1, p1.x + p1.w, y1, p2.x + p2.w, y2, p2.x - p2.w, y2, light ? COL.roadA : COL.roadB);
+    // kelio apšvietimas centre (žibintų šviesa)
+    if (n < 40) { ctx.globalAlpha = 0.07 * (1 - n / 40); poly(p1.x - p1.w * 0.5, y1, p1.x + p1.w * 0.5, y1, p2.x + p2.w * 0.5, y2, p2.x - p2.w * 0.5, y2, '#ffe9b0'); ctx.globalAlpha = 1; }
+    if (light) {
+      const l1 = p1.w / 32, l2 = p2.w / 32;
+      let lx1 = p1.x - p1.w + p1.w * 2 / LANES, lx2 = p2.x - p2.w + p2.w * 2 / LANES;
+      for (let lane = 1; lane < LANES; lane++, lx1 += p1.w * 2 / LANES, lx2 += p2.w * 2 / LANES)
+        poly(lx1 - l1 / 2, y1, lx1 + l1 / 2, y1, lx2 + l2 / 2, y2, lx2 - l2 / 2, y2, COL.lane);
+    }
+    if (seg.fog > 0.02) { ctx.globalAlpha = seg.fog; ctx.fillStyle = COL.fog; ctx.fillRect(0, y2, W, y1 - y2 + 1); ctx.globalAlpha = 1; }
+  }
+
+  function drawSprite(sp, x, y, sc, clip, fog) {
+    if (y - 2 > clip && sp.type !== 'lamp') return;
+    withClip(clip, () => {
+      ctx.globalAlpha = 1 - fog * 0.85;
+      if (sp.type === 'lamp') drawLamp(x, y, sc, sp.offset < 0 ? 1 : -1);
+      else if (sp.type === 'pine') drawPine(x, y, sc * sp.s);
+      else if (sp.type === 'billboard') drawBillboard(x, y, sc, sp.text);
+      else if (sp.type === 'can') drawCan(x, y, sc);
+      ctx.globalAlpha = 1;
+    });
+  }
+  function drawLamp(x, y, sc, dir) {
+    const h = 3200 * sc, arm = 600 * sc, w = Math.max(1, 50 * sc);
+    if (h < 3) return;
+    ctx.fillStyle = '#3a3150'; ctx.fillRect(x - w / 2, y - h, w, h);
+    ctx.strokeStyle = '#3a3150'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y - h); ctx.lineTo(x + dir * arm, y - h - 80 * sc); ctx.stroke();
+    const hx = x + dir * arm, hy = y - h - 60 * sc, gr = Math.max(3, 520 * sc);
+    const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, gr);
+    g.addColorStop(0, 'rgba(255,220,150,.95)'); g.addColorStop(0.15, 'rgba(255,170,90,.45)'); g.addColorStop(1, 'rgba(255,120,60,0)');
+    ctx.fillStyle = g; ctx.fillRect(hx - gr, hy - gr, gr * 2, gr * 2);
+  }
+  function drawPine(x, y, sc) {
+    const h = 4200 * sc, w = 1500 * sc;
+    if (h < 3) return;
+    ctx.fillStyle = '#0a0318';
+    ctx.beginPath();
+    for (let i = 0; i < 3; i++) {
+      const ty = y - h * (0.35 + i * 0.3), by = y - h * (0.05 + i * 0.27), bw = w * (1 - i * 0.25) / 2;
+      ctx.moveTo(x, ty - h * 0.12); ctx.lineTo(x + bw, by); ctx.lineTo(x - bw, by); ctx.closePath();
+    }
+    ctx.fill();
+    ctx.fillRect(x - w * 0.04, y - h * 0.1, w * 0.08, h * 0.1);
+  }
+  function drawBillboard(x, y, sc, text) {
+    const w = 3200 * sc, h = 1300 * sc, top = y - 3400 * sc;
+    if (w < 6) return;
+    ctx.fillStyle = '#2a2040'; ctx.fillRect(x - w * 0.3, top + h, w * 0.04, y - top - h); ctx.fillRect(x + w * 0.26, top + h, w * 0.04, y - top - h);
+    ctx.fillStyle = '#0c0520'; ctx.fillRect(x - w / 2, top, w, h);
+    ctx.save(); ctx.shadowColor = '#2de2ff'; ctx.shadowBlur = Math.min(20, 10 * sc * 100); ctx.strokeStyle = '#2de2ff'; ctx.lineWidth = Math.max(1, 60 * sc); ctx.strokeRect(x - w / 2, top, w, h);
+    ctx.fillStyle = '#ff3ea5'; ctx.shadowColor = '#ff3ea5'; ctx.font = `700 ${Math.max(4, h * 0.46)}px "Chakra Petch", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, top + h / 2, w * 0.9); ctx.restore();
+  }
+  function drawCan(x, y, sc) {
+    const w = 260 * sc, h = 520 * sc, bob = Math.sin(S.t * 5) * 80 * sc, top = y - h - 200 * sc + bob;
+    if (w < 2) return;
+    const g = ctx.createRadialGradient(x, top + h / 2, 0, x, top + h / 2, w * 2.2);
+    g.addColorStop(0, 'rgba(45,226,255,.55)'); g.addColorStop(1, 'rgba(45,226,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(x - w * 2.2, top + h / 2 - w * 2.2, w * 4.4, w * 4.4);
+    ctx.fillStyle = '#2de2ff'; roundRect(x - w / 2, top, w, h, w * 0.35); ctx.fill();
+    ctx.fillStyle = '#e9fbff'; ctx.fillRect(x - w * 0.15, top - h * 0.12, w * 0.3, h * 0.14);
+    ctx.fillStyle = '#07021a'; ctx.font = `700 ${Math.max(3, w * 0.42)}px "Chakra Petch", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('N₂O', x, top + h * 0.55, w * 0.9);
+  }
+  // Žalia LT magistralės kryptis virš kelio prie kiekvieno miesto
+  function drawGantry(seg, sc) {
+    const nextAbs = (S.cp + 1) * CP_GAP;   // kito miesto vieta absoliučiu atstumu
+    const ahead = nextAbs - S.distance;
+    const segAhead = wrap(seg.index * SEG - (S.position + PLAYER_Z), trackLength);
+    if (ahead < 0 || ahead > DRAW * SEG || Math.abs(segAhead - ahead) >= SEG / 2 + 1) return;
+    const p = seg.p1.screen, w = p.w * 2.5, h = 1100 * sc, top = p.y - 4600 * sc;
+    if (w < 8) return;
+    withClip(seg.clip, () => {
+      ctx.globalAlpha = 1 - seg.fog * 0.8;
+      ctx.fillStyle = '#4a4560'; const pw = Math.max(2, 90 * sc);
+      ctx.fillRect(p.x - p.w * 1.2 - pw, top, pw, p.y - top); ctx.fillRect(p.x + p.w * 1.2, top, pw, p.y - top);
+      ctx.fillRect(p.x - p.w * 1.2, top + h * 0.2, p.w * 2.4, pw);
+      ctx.fillStyle = '#0d7a4f'; roundRect(p.x - w * 0.36, top - h * 0.1, w * 0.72, h, h * 0.08); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1, 40 * sc); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.max(4, h * 0.5)}px "Chakra Petch", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(CITIES[S.cp % CITIES.length].toUpperCase(), p.x, top + h * 0.4, w * 0.66);
+      ctx.globalAlpha = 1;
+    });
+  }
+  function roundRect(x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  // Mašina iš galo: kėbulas, galinis stiklas, žibintai, numeris
+  function drawCar(cx, by, w, color, kind, fog, isPlayer, tilt) {
+    const truck = kind === 'truck';
+    const h = w * (truck ? 0.95 : 0.52);
+    ctx.save();
+    ctx.translate(cx, by); ctx.rotate(tilt * 0.035);
+    ctx.globalAlpha = 1 - fog * 0.85;
+    // šešėlis
+    ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(0, 0, w * 0.55, w * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+    // ratai
+    ctx.fillStyle = '#05030a'; ctx.fillRect(-w * 0.46, -h * 0.2, w * 0.17, h * 0.22); ctx.fillRect(w * 0.29, -h * 0.2, w * 0.17, h * 0.22);
+    if (truck) {
+      ctx.fillStyle = '#d9d6e6'; roundRect(-w / 2, -h, w, h * 0.86, w * 0.03); ctx.fill();
+      ctx.fillStyle = '#b7b2c9'; ctx.fillRect(-w / 2, -h * 0.22, w, h * 0.08);
+      ctx.fillStyle = color; ctx.fillRect(-w / 2, -h * 0.98, w, h * 0.06);
+      ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = Math.max(1, w * 0.01); ctx.beginPath(); ctx.moveTo(0, -h * 0.95); ctx.lineTo(0, -h * 0.24); ctx.stroke();
+    } else {
+      // kėbulas
+      const g = ctx.createLinearGradient(0, -h, 0, 0);
+      g.addColorStop(0, shade(color, -0.25)); g.addColorStop(0.45, color); g.addColorStop(1, shade(color, -0.55));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.5, -h * 0.12); ctx.lineTo(-w * 0.5, -h * 0.5); ctx.quadraticCurveTo(-w * 0.48, -h * 0.62, -w * 0.4, -h * 0.64);
+      ctx.lineTo(-w * 0.3, -h * 0.98); ctx.quadraticCurveTo(0, -h * 1.04, w * 0.3, -h * 0.98); ctx.lineTo(w * 0.4, -h * 0.64);
+      ctx.quadraticCurveTo(w * 0.48, -h * 0.62, w * 0.5, -h * 0.5); ctx.lineTo(w * 0.5, -h * 0.12); ctx.closePath(); ctx.fill();
+      // galinis stiklas
+      const gl = ctx.createLinearGradient(0, -h * 0.95, 0, -h * 0.65);
+      gl.addColorStop(0, '#2a2240'); gl.addColorStop(1, '#0b0716');
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.moveTo(-w * 0.34, -h * 0.66); ctx.lineTo(-w * 0.26, -h * 0.93); ctx.lineTo(w * 0.26, -h * 0.93); ctx.lineTo(w * 0.34, -h * 0.66); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = Math.max(1, w * 0.012); ctx.beginPath(); ctx.moveTo(-w * 0.18, -h * 0.9); ctx.lineTo(-w * 0.26, -h * 0.7); ctx.stroke();
+      // buferis
+      ctx.fillStyle = shade(color, -0.65); ctx.fillRect(-w * 0.5, -h * 0.22, w, h * 0.1);
+    }
+    // galiniai žibintai su švytėjimu
+    const lw = w * 0.24, lh = Math.max(1.5, h * (truck ? 0.06 : 0.1)), ly = -h * (truck ? 0.3 : 0.47);
+    const glow = isPlayer ? (S.crashFlash > 0 || input.brake ? 1 : 0.75) : 0.85;
+    if (w > 6) {
+      const gg = ctx.createRadialGradient(0, ly, 0, 0, ly, w * 0.75);
+      gg.addColorStop(0, `rgba(255,30,60,${0.22 * glow})`); gg.addColorStop(1, 'rgba(255,30,60,0)');
+      ctx.fillStyle = gg; ctx.fillRect(-w * 0.75, ly - w * 0.75, w * 1.5, w * 1.5);
+    }
+    ctx.fillStyle = '#ff2448'; ctx.fillRect(-w * 0.47, ly, lw, lh); ctx.fillRect(w * 0.47 - lw, ly, lw, lh);
+    ctx.fillStyle = 'rgba(255,220,230,.9)'; ctx.fillRect(-w * 0.45, ly + lh * 0.3, lw * 0.35, lh * 0.4); ctx.fillRect(w * 0.45 - lw * 0.35, ly + lh * 0.3, lw * 0.35, lh * 0.4);
+    // numeris
+    if (w > 30) {
+      const nw = w * 0.2, nh = w * 0.055, ny = -h * (truck ? 0.2 : 0.33);
+      ctx.fillStyle = '#f2f2f2'; ctx.fillRect(-nw / 2, ny, nw, nh);
+      ctx.fillStyle = '#1b3fa8'; ctx.fillRect(-nw / 2, ny, nw * 0.16, nh);
+      if (w > 70) { ctx.fillStyle = '#111'; ctx.font = `700 ${nh * 0.75}px "Chakra Petch", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(isPlayer ? 'NGR 001' : 'LT', nw * 0.08, ny + nh / 2 + 0.5, nw * 0.8); }
+    }
+    // nitro liepsnos
+    if (isPlayer && S.nitroOn) {
+      for (const sx of [-0.28, 0.28]) {
+        const fl = w * (0.25 + Math.random() * 0.2), fx = w * sx, fy = -h * 0.14;
+        const fg = ctx.createRadialGradient(fx, fy, 0, fx, fy + fl * 0.3, fl);
+        fg.addColorStop(0, 'rgba(255,255,255,.95)'); fg.addColorStop(0.3, 'rgba(45,226,255,.85)'); fg.addColorStop(0.7, 'rgba(180,80,255,.4)'); fg.addColorStop(1, 'rgba(180,80,255,0)');
+        ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(fx, fy + fl * 0.25, w * 0.07, fl * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+  function shade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16), f = c => Math.max(0, Math.min(255, Math.round(c + (amt < 0 ? c * amt : (255 - c) * amt))));
+    return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+  }
+  const lines = Array.from({ length: 40 }, () => ({ a: Math.random() * Math.PI * 2, r: Math.random(), l: 0.1 + Math.random() * 0.25 }));
+  function speedLines() {
+    const cx = W / 2, cy = HORIZON, R = Math.hypot(W, H);
+    ctx.strokeStyle = 'rgba(200,245,255,.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (const ln of lines) {
+      ln.r += 0.06; if (ln.r > 1) { ln.r = 0.15 + Math.random() * 0.2; ln.a = Math.random() * Math.PI * 2; }
+      if (reduced && ln.a > 1) continue;
+      const r1 = ln.r * R * 0.6, r2 = r1 + ln.l * R * 0.4;
+      ctx.moveTo(cx + Math.cos(ln.a) * r1, cy + Math.sin(ln.a) * r1 * 0.7); ctx.lineTo(cx + Math.cos(ln.a) * r2, cy + Math.sin(ln.a) * r2 * 0.7);
+    }
+    ctx.stroke();
+  }
+  function drawCountdown() {
+    const n = Math.ceil(S.countdown);
+    ctx.save(); ctx.font = `400 ${Math.min(W, H) * 0.3}px Monoton, "Chakra Petch", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff'; ctx.shadowColor = '#ff3ea5'; ctx.shadowBlur = 30;
+    const f = S.countdown - Math.floor(S.countdown);
+    ctx.globalAlpha = Math.min(1, f * 2.5); ctx.fillText(String(n), W / 2, H * 0.36); ctx.restore();
+  }
+
+  // ---------- Galinio vaizdo veidrodėlis (kamera arba piešinys) ----------
+  function mirrorRect() {
+    const w = Math.min(210, W * 0.46), h = w * 0.34;
+    return { x: (W - w) / 2, y: safeTop() + 66, w, h };
+  }
+  const safeTop = () => $('sa').offsetHeight || 0;
+  const video = $('cam');
+  let camState = 'off'; // off | pending | live | denied
+  function drawMirror() {
+    const m = mirrorRect();
+    ctx.save();
+    // laikiklis
+    ctx.fillStyle = '#15101f'; ctx.fillRect(W / 2 - 4, 0, 8, m.y + 4);
+    ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4;
+    ctx.fillStyle = '#1a1424'; roundRect(m.x - 5, m.y - 5, m.w + 10, m.h + 10, m.h * 0.5); ctx.fill();
+    ctx.shadowColor = 'transparent';
+    roundRect(m.x, m.y, m.w, m.h, m.h * 0.45); ctx.clip();
+    if (camState === 'live' && video.readyState >= 2 && video.videoWidth) {
+      const vw = video.videoWidth, vh = video.videoHeight, s = Math.max(m.w / vw, m.h / vh);
+      const dw = vw * s, dh = vh * s;
+      ctx.translate(m.x + m.w, m.y); ctx.scale(-1, 1);       // veidrodinis vaizdas
+      ctx.drawImage(video, (m.w - dw) / 2, (m.h - dh) / 2, dw, dh);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      roundRect(m.x, m.y, m.w, m.h, m.h * 0.45); ctx.clip();
+      ctx.fillStyle = 'rgba(80,40,140,.18)'; ctx.fillRect(m.x, m.y, m.w, m.h);
+    } else {
+      // „kelias už nugaros“: dangus, kelias į tolį, sekančios mašinos žibintai
+      const g = ctx.createLinearGradient(0, m.y, 0, m.y + m.h);
+      g.addColorStop(0, '#1d0a3d'); g.addColorStop(0.5, '#6b1a6e'); g.addColorStop(0.52, '#140628'); g.addColorStop(1, '#0d0420');
+      ctx.fillStyle = g; ctx.fillRect(m.x, m.y, m.w, m.h);
+      const hz = m.y + m.h * 0.51, cx = m.x + m.w / 2 - S.steerVis * 6;
+      ctx.fillStyle = '#211c38'; ctx.beginPath(); ctx.moveTo(cx - 2, hz); ctx.lineTo(cx + 2, hz); ctx.lineTo(cx + m.w * 0.5, m.y + m.h); ctx.lineTo(cx - m.w * 0.5, m.y + m.h); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,62,165,.8)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(cx - 2, hz); ctx.lineTo(cx - m.w * 0.5, m.y + m.h); ctx.moveTo(cx + 2, hz); ctx.lineTo(cx + m.w * 0.5, m.y + m.h); ctx.stroke();
+      const t = (S.t * 0.6) % 1, fx = cx + Math.sin(S.t * 0.7) * m.w * 0.08, fy = hz + m.h * (0.1 + t * 0.05);
+      for (const d of [-1, 1]) { const hg = ctx.createRadialGradient(fx + d * 7, fy, 0, fx + d * 7, fy, 12); hg.addColorStop(0, 'rgba(255,250,220,.95)'); hg.addColorStop(1, 'rgba(255,250,220,0)'); ctx.fillStyle = hg; ctx.fillRect(fx + d * 7 - 12, fy - 12, 24, 24); }
+    }
+    // atspindys
+    const rg = ctx.createLinearGradient(m.x, m.y, m.x + m.w, m.y + m.h);
+    rg.addColorStop(0, 'rgba(255,255,255,.22)'); rg.addColorStop(0.35, 'rgba(255,255,255,0)'); rg.addColorStop(0.6, 'rgba(255,255,255,0)'); rg.addColorStop(0.7, 'rgba(255,255,255,.08)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = rg; ctx.fillRect(m.x, m.y, m.w, m.h);
+    ctx.restore();
+  }
+  async function startCamera() {
+    if (camState === 'live' || camState === 'pending') return;
+    camState = 'pending';
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no camera');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }, audio: false });
+      video.srcObject = stream; await video.play().catch(() => {});
+      camState = 'live'; $('camHint').hidden = true;
+    } catch { camState = 'denied'; $('camHint').hidden = false; }
+  }
+  function stopCamera() {
+    try { const s = video.srcObject; if (s) s.getTracks().forEach(t => t.stop()); video.srcObject = null; } catch {}
+    camState = 'off';
+  }
+
+  // ---------- Jutikliai: polinkis ir purtymas ----------
+  let sensorsAsked = false, tiltTimer = null;
+  function onOrientation(e) {
+    if (e.gamma == null && e.beta == null) return;
+    const angle = (screen.orientation && typeof screen.orientation.angle === 'number') ? screen.orientation.angle : (window.orientation || 0);
+    let raw = e.gamma || 0;
+    if (angle === 90) raw = e.beta || 0; else if (angle === -90 || angle === 270) raw = -(e.beta || 0);
+    let v = Math.max(-1, Math.min(1, raw / 25));
+    if (Math.abs(v) < 0.06) v = 0;
+    input.tilt += (v - input.tilt) * 0.35;
+    if (!input.tiltLive) { input.tiltLive = true; $('tiltHint').hidden = true; }
+  }
+  let lastShake = 0;
+  function onMotion(e) {
+    const a = e.acceleration || e.accelerationIncludingGravity;
+    if (!a || a.x == null) return;
+    const g = Math.hypot(a.x || 0, a.y || 0, a.z || 0) - (e.acceleration ? 0 : 9.81);
+    const now = performance.now();
+    if (g > 18 && now - lastShake > 800) {
+      lastShake = now;
+      if (S.mode === 'play' && S.nitro > 0.05) { S.nitroBurst = 1.4; showBanner('NITRO!', 'supurtyta', 0.7); }
+    }
+  }
+  async function askSensors() {
+    if (sensorsAsked) return; sensorsAsked = true;
+    try {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const res = await DeviceOrientationEvent.requestPermission().catch(() => 'denied');
+        if (res !== 'granted') throw new Error('denied');
+      }
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        await DeviceMotionEvent.requestPermission().catch(() => 'denied');
+      }
+      addEventListener('deviceorientation', onOrientation);
+      addEventListener('devicemotion', onMotion);
+    } catch {}
+    clearTimeout(tiltTimer);
+    tiltTimer = setTimeout(() => { if (!input.tiltLive) $('tiltHint').hidden = false; }, 1500);
+  }
+
+  // ---------- Garsas (WebAudio, įjungiamas tik paspaudus) ----------
+  let audio = null;
+  function initAudio() {
+    if (audio || !settings.sound) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      const ac = new AC(), master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
+      const filt = ac.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 600;
+      const eg = ac.createGain(); eg.gain.value = 0;
+      const o1 = ac.createOscillator(), o2 = ac.createOscillator(); o1.type = 'sawtooth'; o2.type = 'square'; o2.detune.value = 8;
+      o1.connect(filt); o2.connect(filt); filt.connect(eg); eg.connect(master); o1.start(); o2.start();
+      audio = { ac, master, filt, eg, o1, o2 };
+    } catch { audio = null; }
+  }
+  function engineSound() {
+    if (!audio) return;
+    const p = S.speed / MAXS, t = audio.ac.currentTime;
+    const run = (S.mode === 'play' || S.mode === 'ending' || S.mode === 'countdown') && settings.sound;
+    audio.eg.gain.setTargetAtTime(run ? 0.05 + p * 0.05 : 0, t, 0.1);
+    audio.o1.frequency.setTargetAtTime(45 + p * 110 + (S.nitroOn ? 40 : 0), t, 0.05);
+    audio.o2.frequency.setTargetAtTime(46 + p * 112 + (S.nitroOn ? 42 : 0), t, 0.05);
+    audio.filt.frequency.setTargetAtTime(400 + p * 1400 + (S.nitroOn ? 900 : 0), t, 0.1);
+  }
+  function sfx(kind) {
+    if (!audio || !settings.sound) return;
+    try {
+      const ac = audio.ac, t = ac.currentTime;
+      if (kind === 'crash') {
+        const len = 0.35, buf = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+        const src = ac.createBufferSource(), g = ac.createGain(); src.buffer = buf; g.gain.value = 0.5; src.connect(g); g.connect(audio.master); src.start();
+        return;
+      }
+      const notes = kind === 'checkpoint' ? [660, 880, 1320] : kind === 'pickup' ? [990, 1480] : [440, 330, 220];
+      notes.forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + i * 0.09); g.gain.exponentialRampToValueAtTime(0.18, t + i * 0.09 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 0.25);
+        o.connect(g); g.connect(audio.master); o.start(t + i * 0.09); o.stop(t + i * 0.09 + 0.3);
+      });
+    } catch {}
+  }
+
+  // ---------- HUD ----------
+  let bannerTimer = null;
+  function showBanner(text, sub, secs) {
+    const b = $('banner'); b.innerHTML = ''; b.append(text);
+    if (sub) { const s = document.createElement('small'); s.textContent = sub; b.append(s); }
+    b.classList.add('on'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => b.classList.remove('on'), secs * 1000);
+  }
+  let hudT = 0;
+  function updateHud(dt) {
+    hudT += dt; if (hudT < 0.08) return; hudT = 0;
+    $('timeV').textContent = Math.ceil(S.timeLeft);
+    $('time').classList.toggle('low', S.timeLeft < 10 && S.mode === 'play');
+    $('distV').textContent = kmText(S.distance / UNITS_PER_KM);
+    $('speedV').textContent = Math.round(S.speed / MAXS * 220);
+    $('nitroV').style.width = Math.round(S.nitro * 100) + '%';
+    $('nitroBtn').classList.toggle('on', S.nitroOn);
+    const left = ((S.cp + 1) * CP_GAP - S.distance) / UNITS_PER_KM;
+    $('city').textContent = `→ ${cityName(S.cp).toUpperCase()} ${kmText(Math.max(0, left))} km`;
+  }
+
+  // ---------- Ekranai ----------
+  function show(id) { for (const s of ['start', 'over', 'paused']) $(s).hidden = s !== id; $('hud').hidden = !(id === null); }
+  function newRace() {
+    buildRoadOnce();
+    Object.assign(S, { position: 0, speed: 0, playerX: 0, timeLeft: 40, nitro: 0.4, distance: 0, cp: 0, passed: 0, lap: 0, shake: 0, crashFlash: 0, nitroBurst: 0, countdown: 3, mode: 'countdown' });
+    for (const seg of segments) for (const sp of seg.sprites) if (sp.type === 'can') sp.collected = -1;
+    resetCars(34);
+    show(null);
+    $('steerHint').style.opacity = settings.control === 'touch' || !input.tiltLive ? 1 : 0;
+    setTimeout(() => { $('steerHint').style.opacity = 0; }, 3500);
+    $('nitroHint').textContent = input.tiltLive ? 'arba purtyk' : 'laikyk';
+  }
+  function gameOver() {
+    S.mode = 'over';
+    const km = S.distance / UNITS_PER_KM, best = store.get('best', 0);
+    const isBest = km > best + 0.05;
+    if (isBest) store.set('best', Math.round(km * 10) / 10);
+    $('oDist').textContent = kmText(km);
+    $('oCity').textContent = S.cp ? CITIES[(S.cp - 1) % CITIES.length] : 'Vilnius';
+    $('oPass').textContent = S.passed;
+    $('newBest').hidden = !isBest;
+    $('bestOver').innerHTML = `Rekordas: <b>${kmText(Math.max(best, km))} km</b>`;
+    show('over');
+  }
+  let built = false;
+  function buildRoadOnce() { if (!built) { buildRoad(); built = true; } }
+  function renderSettings() {
+    const set = (on, off, v) => { $(on).setAttribute('aria-pressed', String(v)); $(off).setAttribute('aria-pressed', String(!v)); };
+    set('ctlTilt', 'ctlTouch', settings.control === 'tilt');
+    set('camOn', 'camOff', !!settings.camera);
+    set('sndOn', 'sndOff', !!settings.sound);
+    $('bestStart').innerHTML = `Rekordas: <b>${kmText(store.get('best', 0))} km</b>`;
+  }
+  function save() { store.set('control', settings.control); store.set('camera', settings.camera); store.set('sound', settings.sound); renderSettings(); }
+
+  $('ctlTilt').onclick = () => { settings.control = 'tilt'; save(); askSensors(); };
+  $('ctlTouch').onclick = () => { settings.control = 'touch'; save(); };
+  $('camOn').onclick = () => { settings.camera = true; save(); startCamera(); };
+  $('camOff').onclick = () => { settings.camera = false; save(); stopCamera(); $('camHint').hidden = true; };
+  $('sndOn').onclick = () => { settings.sound = true; save(); initAudio(); try { audio && audio.ac.resume(); } catch {} };
+  $('sndOff').onclick = () => { settings.sound = false; save(); };
+  $('goBtn').onclick = () => {
+    if (settings.control === 'tilt') askSensors();
+    if (settings.camera) startCamera();
+    initAudio(); try { audio && audio.ac.resume(); } catch {}
+    newRace();
+  };
+  $('againBtn').onclick = () => { initAudio(); newRace(); };
+  $('menuBtn').onclick = () => { S.mode = 'menu'; renderSettings(); show('start'); };
+  const pause = () => { if (S.mode === 'play' || S.mode === 'countdown') { S.prevMode = S.mode; S.mode = 'paused'; show('paused'); } };
+  $('pauseBtn').onclick = pause;
+  $('resumeBtn').onclick = () => { S.mode = S.prevMode || 'play'; show(null); };
+  $('quitBtn').onclick = () => { S.mode = 'play'; S.timeLeft = 0; gameOver(); };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+
+  // ---------- Valdymas lietimu ir klaviatūra ----------
+  cv.addEventListener('pointerdown', e => {
+    if (S.mode === 'menu' || S.mode === 'over') return;
+    input.touches.set(e.pointerId, e.clientX < W / 2 ? -1 : 1);
+    try { cv.setPointerCapture(e.pointerId); } catch {}
+  });
+  cv.addEventListener('pointermove', e => { if (input.touches.has(e.pointerId)) input.touches.set(e.pointerId, e.clientX < W / 2 ? -1 : 1); });
+  const lift = e => input.touches.delete(e.pointerId);
+  cv.addEventListener('pointerup', lift); cv.addEventListener('pointercancel', lift);
+  const nb = $('nitroBtn');
+  nb.addEventListener('pointerdown', e => { e.preventDefault(); input.nitroTouch = true; try { nb.setPointerCapture(e.pointerId); } catch {} });
+  nb.addEventListener('pointerup', () => { input.nitroTouch = false; });
+  nb.addEventListener('pointercancel', () => { input.nitroTouch = false; });
+  const keymap = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'nitroKey', ArrowUp: 'nitroKey', KeyW: 'nitroKey', ArrowDown: 'brake', KeyS: 'brake' };
+  addEventListener('keydown', e => {
+    if (keymap[e.code]) { input[keymap[e.code]] = true; if (S.mode !== 'menu' && S.mode !== 'over') e.preventDefault(); }
+    if (e.code === 'KeyP' || e.code === 'Escape') { S.mode === 'paused' ? $('resumeBtn').click() : pause(); }
+    if (e.code === 'Enter' && S.mode === 'menu') $('goBtn').click();
+  });
+  addEventListener('keyup', e => { if (keymap[e.code]) input[keymap[e.code]] = false; });
+  addEventListener('resize', resize);
+
+  // ---------- Pagrindinis ciklas ----------
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (S.mode === 'menu' || S.mode === 'over') {
+      // „demo“ režimas meniu fone: mašina pati važiuoja
+      S.t += dt; S.speed += (MAXS * 0.55 - S.speed) * dt; S.position = wrap(S.position + S.speed * dt, trackLength);
+      const seg = findSegment(S.position + PLAYER_Z); S.playerX += (-seg.curve * 0.05 - S.playerX) * dt * 2;
+      for (const car of S.cars) car.z = wrap(car.z + car.speed * dt, trackLength);
+      farOffset += seg.curve * 0.55 * dt * 18; cityOffset += seg.curve * 0.55 * dt * 32;
+      engineSound();
+    } else if (S.mode !== 'paused') { update(dt); updateHud(dt); }
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  // Automatiniams testams: atidarius su #test galima pasiekti būseną
+  if (location.hash === '#test') window.__ngTest = { S, CP_GAP, MAXS };
+
+  // ---------- Paleidimas ----------
+  function start() {
+    buildRoadOnce(); resize(); resetCars(28); renderSettings(); show('start');
+    requestAnimationFrame(t => { last = t; loop(t); });
+  }
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>

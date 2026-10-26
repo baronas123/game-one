@@ -1,0 +1,43 @@
+# Arkada iPhone – XcodeGen projektas (tas pats būdas kaip b-finance: apps/BFinance/project.yml).
+# Generavimas: cd ios && xcodegen generate   (arba tiesiog ios/scripts/install_iphone.sh)
+# Šaltinis tiesos – šis failas; Arkada.xcodeproj negeneruojamas į git.
+# Kodas tas pats, kaip Arkada.swiftpm (Swift Playgrounds), tik Package.swift čia nenaudojamas.
+name: Arkada
+options:
+  bundleIdPrefix: lt.barons
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+targets:
+  Arkada:
+    type: application
+    platform: iOS
+    # Atskiri aplankai (ne visas Arkada.swiftpm), kad Xcode nepalaikytų jo „paketu“ ir neįtrauktų Package.swift.
+    sources:
+      - Arkada.swiftpm/Arcade
+      - Arkada.swiftpm/Core
+      - Arkada.swiftpm/Games
+    info:
+      path: Info-Arkada.plist
+      properties:
+        CFBundleDisplayName: Arkada
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait]
+        NSCameraUsageDescription: "Kamera naudojama žaidimuose, pvz. tavo veidas galinio vaizdo veidrodėlyje ir galvos judesių sekimas mankštoje. Vaizdas apdorojamas tik telefone, niekur nesiunčiamas ir neįrašomas."
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: lt.barons.arkada
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ENABLE_PREVIEWS: YES

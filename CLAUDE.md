@@ -21,3 +21,6 @@ Arkada – žaidimų platforma.
 - Šiame Linux konteineryje Swift/Xcode nėra, todėl SwiftUI kodo sukompiliuoti negalima.
   Algoritmus verta patikrinti atskirai (pvz. perrašius į JS ir paleidus `node`).
 - Naršyklės versija (`web/<žaidimas>.html`) – vienas savarankiškas failas; žaidimo logika turi atitikti iOS versiją.
+- Diegimas į iPhone (Mac): `ios/scripts/install_iphone.sh` (XcodeGen + `xcodebuild -allowProvisioningUpdates` + `devicectl`).
+  Kompiliavimo patikra: `ios/scripts/install_iphone.sh --sim`. Naujas Swift failas `Games/`, `Core/` ar `Arcade/`
+  aplanke į projektą patenka automatiškai (project.yml šaltiniai – aplankai).
