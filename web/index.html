@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="lt">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arkada">
+<meta name="theme-color" content="#0b0b14">
+<title>Arkada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: vienas stulpelis žaidimų kortelių – arkados „kasetės“. Sąmoningai viena tamsi tema. */
+:root {
+  --bg: #0b0b14;
+  --card: #151524;
+  --line: rgba(255,255,255,.12);
+  --fg: #f4f2ff;
+  --muted: rgba(244,242,255,.62);
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+body {
+  margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 560px; margin: 0 auto; padding-block: 28px 48px; display: flex; flex-direction: column; gap: 20px; }
+h1 { margin: 0; font: 800 64px/.9 var(--display); text-transform: uppercase; letter-spacing: -.01em; }
+.lead { margin: 0; color: var(--muted); line-height: 1.5; }
+.games { display: flex; flex-direction: column; gap: 12px; }
+a.game {
+  display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center;
+  padding: 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line);
+  color: inherit; text-decoration: none; transition: transform .12s ease;
+}
+a.game:active { transform: scale(.98); }
+a.game:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.ico { width: 64px; height: 64px; border-radius: 14px; display: grid; place-items: center; font: 800 26px/1 var(--display); }
+.game b { display: block; font: 800 24px/1.05 var(--display); text-transform: uppercase; }
+.game span { display: block; color: var(--muted); font-size: 14px; line-height: 1.4; margin-top: 3px; }
+.tag { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.note { font-size: 13px; color: var(--muted); line-height: 1.5; border-left: 2px solid var(--line); padding-left: 12px; }
+</style>
+<main>
+  <span class="tag">game-one · naršyklės versija</span>
+  <h1>Arkada</h1>
+  <p class="lead">Žaidimai telefonui. Polinkis, purtymas ir kamera veikia, kai puslapis atidarytas šiuo adresu.</p>
+  <nav class="games">
+    <a class="game" href="naktinis-greitkelis.html">
+      <span class="ico" style="background:linear-gradient(135deg,#ff2e88,#6b2cff)">NG</span>
+      <div><b>Naktinis greitkelis</b><span>Lenktynės neoniniame greitkelyje. Vairuok pakreipdamas telefoną.</span></div>
+    </a>
+    <a class="game" href="parkavimo-meistras.html">
+      <span class="ico" style="background:linear-gradient(135deg,#ffc928,#ff7a1a);color:#1a1200">PM</span>
+      <div><b>Parkavimo meistras</b><span>Įstatyk mašiną į vietą neįbrėžęs kitų. Galinio vaizdo kamera.</span></div>
+    </a>
+    <a class="game" href="sankryza.html">
+      <span class="ico" style="background:linear-gradient(135deg,#1fd18b,#0a7cff)">S</span>
+      <div><b>Sankryža</b><span>Valdyk šviesoforus ir išvenk avarijų. Supurtyk – avarinis stabdymas.</span></div>
+    </a>
+    <a class="game" href="planu-meistras.html">
+      <span class="ico" style="background:linear-gradient(135deg,#2a6cf2,#0d3473)">PL</span>
+      <div><b>Planų Meistras</b><span>Sudėliok buto planą iš kambarių.</span></div>
+    </a>
+  </nav>
+  <p class="note">Į iPhone pradžios ekraną: Safari → „Bendrinti“ → „Pridėti prie pradžios ekrano“.</p>
+</main>

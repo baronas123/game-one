@@ -28,6 +28,9 @@ let package = Package(
             ],
             supportedInterfaceOrientations: [
                 .portrait
+            ],
+            capabilities: [
+                .camera(purposeString: "Kamera naudojama žaidimuose, pvz. tavo veidas galinio vaizdo veidrodėlyje. Vaizdas niekur nesiunčiamas ir neįrašomas.")
             ]
         )
     ],
