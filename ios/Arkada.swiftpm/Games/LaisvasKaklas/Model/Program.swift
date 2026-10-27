@@ -138,7 +138,7 @@ extension LaisvasKaklas {
                 name: "Mentių suspaudimas",
                 instruction: "Pečius atitrauk atgal ir žemyn, suspausk mentes, išlaikyk, atpalaiduok.",
                 why: "Stiprina mentes laikančius raumenis (apatinę trapecijos dalį) – mažina kaklo ir pečių įtampą.",
-                kind: .rhythm, axis: .none, reps: 8, holdSeconds: 5,
+                kind: .rhythm, axis: .none, reps: 8, holdSeconds: 8,
                 cues: ["Pečiai atgal ir žemyn – suspausk mentes", "Išlaikyk ir kvėpuok", "Atpalaiduok"]
             ),
             Exercise(
@@ -146,7 +146,7 @@ extension LaisvasKaklas {
                 name: "Pečių ratai",
                 instruction: "Lėtai kelk pečius į viršų, sukdamas juos ratu atgal, ir nuleisk.",
                 why: "Atpalaiduoja pečių juostą ir gerina kraujotaką po sėdimo darbo.",
-                kind: .rhythm, axis: .none, reps: 6, holdSeconds: 4,
+                kind: .rhythm, axis: .none, reps: 6, holdSeconds: 6,
                 cues: ["Kelk pečius į viršų", "Ratu atgal", "Nuleisk ir atpalaiduok"]
             ),
             Exercise(

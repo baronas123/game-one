@@ -19,6 +19,13 @@ Skriptas pats: įdiegia XcodeGen (jei reikia), sugeneruoja `Arkada.xcodeproj` i�
 suranda tavo Apple Development komandą (tą pačią, kuria pasirašytas b-finance), sukompiliuoja,
 įdiegia į prijungtą iPhone ir paleidžia. `ios/scripts/install_iphone.sh --sim` – tik patikrina, ar kompiliuojasi.
 
+Kitos parinktys:
+
+- `--only laisvas-kaklas` – Arkados meniu rodomas tik vienas žaidimas (pagal jo `id`).
+- `--app LaisvasKaklas` – atskira programa „Laisvas kaklas“ su savo ikona (`Apps/LaisvasKaklas/`).
+- `--app NaktinisGreitkelis` – atskira programa „Naktinis greitkelis“ su savo ikona (`Apps/NaktinisGreitkelis/`).
+  Kodas tas pats kaip Arkadoje, bet progresas saugomas atskirai (kita programa – kitas `UserDefaults`).
+
 ## Kaip paleisti
 
 Reikia **Mac su Xcode 15+** arba **Swift Playgrounds** (iPad / Mac).

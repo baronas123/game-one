@@ -9,3 +9,5 @@ Arkada.swiftpm/.swiftpm/
 build/
 Arkada.xcodeproj/
 Info-Arkada.plist
+Info-LaisvasKaklas.plist
+Info-NaktinisGreitkelis.plist

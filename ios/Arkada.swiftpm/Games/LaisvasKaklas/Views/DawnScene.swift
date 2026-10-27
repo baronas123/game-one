@@ -22,12 +22,15 @@ extension LaisvasKaklas {
     /// Kuo toliau sesija, tuo labiau išaušta.
     struct DawnScene: View {
         let engine: SessionEngine
+        /// false – tik dangus ir žiežirbos (kai judesį rodo 3D treneris).
+        var showsLantern = true
 
         var body: some View {
             TimelineView(.animation) { timeline in
                 Canvas { ctx, size in
                     DawnPainter.draw(&ctx, size: size,
-                                     t: timeline.date.timeIntervalSinceReferenceDate, engine: engine)
+                                     t: timeline.date.timeIntervalSinceReferenceDate, engine: engine,
+                                     lantern: showsLantern)
                 }
             }
             .ignoresSafeArea()
@@ -37,7 +40,8 @@ extension LaisvasKaklas {
 
     enum DawnPainter {
 
-        static func draw(_ ctx: inout GraphicsContext, size: CGSize, t: Double, engine e: SessionEngine) {
+        static func draw(_ ctx: inout GraphicsContext, size: CGSize, t: Double, engine e: SessionEngine,
+                         lantern: Bool = true) {
             let w = size.width, h = size.height
             let p = e.sessionProgress
 
@@ -47,6 +51,10 @@ extension LaisvasKaklas {
             let center = CGPoint(x: w / 2, y: h * 0.42)
             let axis = e.currentAxis
             let kind = e.current?.kind ?? .reach
+            guard lantern else {
+                drawBursts(&ctx, engine: e, center: center, w: w, h: h, t: t)
+                return
+            }
 
             if e.phase == .active {
                 if kind == .isometric {

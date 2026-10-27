@@ -3,10 +3,16 @@ import SwiftUI
 // Bendri UI komponentai, kad visi žaidimai atrodytų kaip viena šeima.
 
 /// Apvalus „✕“ mygtukas – uždaro žaidimą ir grąžina į Arkados meniu.
+/// Kai žaidimas paleistas kaip atskira programa (nėra iš kur grįžti), mygtukas nerodomas.
 struct GameCloseButton: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isPresented) private var isPresented
 
     var body: some View {
+        if isPresented { button }
+    }
+
+    private var button: some View {
         Button {
             Haptics.tap()
             dismiss()

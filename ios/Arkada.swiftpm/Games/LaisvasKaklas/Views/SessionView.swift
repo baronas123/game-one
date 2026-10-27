@@ -2,7 +2,8 @@ import SwiftUI
 
 extension LaisvasKaklas {
 
-    /// Pati mankšta: aušros scena + užuominos + visada matomas „stabdyti“ mygtukas.
+    /// Pati mankšta: didelė 3D figūra (tu, kaip veidrodyje) su judesio kontūru ir rodyklėmis, užuominos
+    /// ir visada matomas „stabdyti“ mygtukas. Niekas nebėga pagal laikmatį – pratimas laukia tavęs.
     struct SessionView: View {
         let tracker: HeadTracker
         let engine: SessionEngine
@@ -11,19 +12,22 @@ extension LaisvasKaklas {
         let onStop: () -> Void
 
         @State private var coach = Coach()
-        @State private var showAvatar = true
 
         var body: some View {
             ZStack {
-                DawnScene(engine: engine)
+                DawnScene(engine: engine, showsLantern: false)
 
                 VStack(spacing: 12) {
                     topBar
-                    Spacer()
+                    CoachStage(engine: engine, tracker: tracker)
+                        .frame(maxHeight: .infinity)
                     if engine.phase == .intro, let ex = engine.current {
                         introCard(ex)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     } else {
+                        if engine.phase == .active, let meter = meter {
+                            MoveMeter(title: meter.title, value: meter.value, holding: meter.holding)
+                        }
                         cueCard
                     }
                     stopButton
@@ -89,23 +93,6 @@ extension LaisvasKaklas {
                     trackingChip
                 }
                 Spacer()
-                if showAvatar {
-                    HeadAvatar(yaw: tracker.yaw, pitch: tracker.pitch, roll: tracker.roll, tracking: tracker.isTracking)
-                        .frame(width: 76, height: 76)
-                        .padding(6)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .onTapGesture { showAvatar = false }
-                } else {
-                    Button {
-                        showAvatar = true
-                    } label: {
-                        Image(systemName: "person.crop.circle")
-                            .font(.system(size: 20, weight: .semibold))
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .accessibilityLabel("Rodyti galvos atvaizdą")
-                }
             }
         }
 
@@ -133,21 +120,19 @@ extension LaisvasKaklas {
         // MARK: - Užuominos
 
         private func introCard(_ ex: Exercise) -> some View {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Kitas pratimas")
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Kitas pratimas · žiūrėk, kaip daro treneris, ir pradėk, kai būsi pasiruošęs")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.7))
                 Text(ex.name)
                     .font(.system(.title2, design: .rounded).weight(.bold))
                 Text(ex.instruction)
-                    .font(.body)
+                    .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(ex.why)
                     .font(.footnote)
                     .foregroundStyle(.white.opacity(0.7))
-                    .fixedSize(horizontal: false, vertical: true)
-                ProgressView(value: engine.introProgress)
-                    .tint(Palette.peach)
+                    .lineLimit(2)
                 HStack(spacing: 10) {
                     Button("Pradėti") {
                         Haptics.tap()
@@ -165,17 +150,30 @@ extension LaisvasKaklas {
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
 
+        /// Juosta po treneriu: kelias iki taikinio, išlaikymas ar grįžimas.
+        private var meter: (title: String, value: Double, holding: Bool)? {
+            guard let ex = engine.current else { return nil }
+            switch engine.stage {
+            case .approach:
+                guard tracker.isTracking || engine.guided else { return nil }
+                return ("Iki taikinio", engine.valueNorm * Double(engine.demoSide) / 0.92, false)
+            case .hold:
+                return (ex.kind == .stretch ? "Tempk ir kvėpuok" : "Išlaikyk", engine.holdProgress, true)
+            case .returning:
+                return ("Atgal į centrą", 1 - min(1, abs(engine.valueNorm)), false)
+            case .prepare:
+                return nil
+            case .press:
+                return ("Spausk – galva nejuda", engine.holdProgress, true)
+            case .rest:
+                return ("Atpalaiduok", 1, false)
+            case .rhythm:
+                return ("Kartojimas", engine.holdProgress, engine.isHolding)
+            }
+        }
+
         private var cueCard: some View {
             VStack(spacing: 8) {
-                if !engine.warning.isEmpty {
-                    Label(engine.warning, systemImage: "tortoise.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Palette.ink)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Palette.warn, in: Capsule())
-                        .transition(.opacity)
-                }
                 Text(engine.cue)
                     .font(.system(.title3, design: .rounded).weight(.semibold))
                     .multilineTextAlignment(.center)
@@ -184,6 +182,15 @@ extension LaisvasKaklas {
                     .padding(.horizontal, 12)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .contentTransition(.opacity)
+                if engine.waitingForReady {
+                    Button {
+                        Haptics.tap()
+                        engine.confirmReady()
+                    } label: {
+                        Label("Delnas vietoje – spausti", systemImage: "hand.raised.fill")
+                    }
+                    .buttonStyle(ArcadeButtonStyle(tint: LaisvasKaklas.info.tint))
+                }
                 if engine.phase == .active {
                     Button("Praleisti pratimą") {
                         Haptics.tap()
@@ -193,7 +200,6 @@ extension LaisvasKaklas {
                     .foregroundStyle(.white.opacity(0.75))
                 }
             }
-            .animation(.easeInOut(duration: 0.25), value: engine.warning)
         }
 
         private var stopButton: some View {

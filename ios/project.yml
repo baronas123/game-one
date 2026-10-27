@@ -43,3 +43,63 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_PREVIEWS: YES
         ARKADA_ONLY_GAME: ""
+
+  # Atskira programa tik su kaklo mankšta (savo ikona, savo progresas). Diegimas:
+  #   ios/scripts/install_iphone.sh --app LaisvasKaklas
+  LaisvasKaklas:
+    type: application
+    platform: iOS
+    sources:
+      - Arkada.swiftpm/Core
+      - Arkada.swiftpm/Games
+      - Apps/LaisvasKaklas
+    info:
+      path: Info-LaisvasKaklas.plist
+      properties:
+        CFBundleDisplayName: Laisvas kaklas
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait]
+        NSCameraUsageDescription: "Kamera seka galvos judesius mankštos metu. Vaizdas apdorojamas tik telefone, niekur nesiunčiamas ir neįrašomas."
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: lt.barons.laisvaskaklas
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+  # Atskira programa tik su lenktynėmis (savo ikona). Diegimas:
+  #   ios/scripts/install_iphone.sh --app NaktinisGreitkelis
+  NaktinisGreitkelis:
+    type: application
+    platform: iOS
+    sources:
+      - Arkada.swiftpm/Core
+      - Arkada.swiftpm/Games
+      - Apps/NaktinisGreitkelis
+    info:
+      path: Info-NaktinisGreitkelis.plist
+      properties:
+        CFBundleDisplayName: Naktinis greitkelis
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait]
+        NSCameraUsageDescription: "Kamera rodo tavo veidą galinio vaizdo veidrodėlyje. Vaizdas apdorojamas tik telefone, niekur nesiunčiamas ir neįrašomas."
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: lt.barons.naktinisgreitkelis
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

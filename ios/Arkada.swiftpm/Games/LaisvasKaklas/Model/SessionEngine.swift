@@ -18,7 +18,8 @@ extension LaisvasKaklas {
     @Observable
     final class SessionEngine {
         enum Phase: Equatable { case intro, active, finished }
-        private enum Step { case approach, hold, returning, prepare, press, rest, rhythm }
+        /// Kartojimo žingsnis (pagal jį 3D treneris rodo, ką daryti dabar).
+        enum RepStage: Equatable { case approach, hold, returning, prepare, press, rest, rhythm }
 
         let exercises: [Exercise]
         let calibration: Calibration
@@ -31,7 +32,8 @@ extension LaisvasKaklas {
         /// Švelni pastaba (pvz. „Lėčiau“), rodoma kelias sekundes.
         private(set) var warning = ""
         private(set) var holdProgress: Double = 0
-        private(set) var introProgress: Double = 0
+        /// Izometrija: laukiama, kol pasakysi, kad delnas jau vietoje.
+        private(set) var waitingForReady = false
         /// Dabartinė padėtis, padalyta iš taikinio dydžio (taikinys = ±1).
         private(set) var valueNorm: Double = 0
         /// Kuriose pusėse rodyti taikinius: [1], [-1], [1, -1] arba [] (centras).
@@ -47,13 +49,16 @@ extension LaisvasKaklas {
         private(set) var announcementID = 0
         private(set) var skippedCount = 0
 
-        static let introSeconds = 5.0
+        /// Įžanga trunka, kol paspausi „Pradėti“; tai – tik apytikslė trukmė viso laiko skaičiavimui.
+        static let introSeconds = 12.0
         static let graceSeconds = 1.5
 
         @ObservationIgnored private var started = false
-        @ObservationIgnored private var phaseStart: Double = 0
+        /// Dabartinės fazės (įžangos ar pratimo) pradžia – trenerio demonstracijai.
+        @ObservationIgnored private(set) var phaseStart: Double = 0
         @ObservationIgnored private var stepStart: Double = 0
-        @ObservationIgnored private var step: Step = .approach
+        @ObservationIgnored private(set) var stage: RepStage = .approach
+        @ObservationIgnored private(set) var stageStart: Double = 0
         @ObservationIgnored private var lockedSide: Int?
         @ObservationIgnored private var expectedSide: Int?
         @ObservationIgnored private var lastSide: Int?
@@ -66,6 +71,7 @@ extension LaisvasKaklas {
         @ObservationIgnored private var baseline: HeadReading?
         @ObservationIgnored private var maxDeviation: Double = 0
         @ObservationIgnored private var skipIntroRequested = false
+        @ObservationIgnored private var readyRequested = false
         @ObservationIgnored private var skipExerciseRequested = false
 
         init(exercises: [Exercise], calibration: Calibration, level: Double) {
@@ -87,9 +93,14 @@ extension LaisvasKaklas {
 
         var currentAxis: TrackedAxis { current?.axis ?? .none }
 
+        /// Į kurią pusę dabar judama (kai galima į bet kurią – dešinė).
+        var demoSide: Int { lockedSide ?? expectedSide ?? 1 }
+
         // MARK: - Vartotojo veiksmai
 
         func startNow() { skipIntroRequested = true }
+        /// Izometrija: delnas vietoje – galima spausti.
+        func confirmReady() { readyRequested = true }
         func skipExercise() { skipExerciseRequested = true }
 
         // MARK: - Pagrindinis ciklas
@@ -118,8 +129,8 @@ extension LaisvasKaklas {
             case .finished:
                 return
             case .intro:
-                introProgress = min(1, (now - phaseStart) / Self.introSeconds)
-                if skipIntroRequested || now - phaseStart >= Self.introSeconds {
+                // Niekur neskubam: treneris kartoja demonstraciją, kol paspausi „Pradėti“.
+                if skipIntroRequested {
                     skipIntroRequested = false
                     beginActive(now)
                 }
@@ -165,7 +176,6 @@ extension LaisvasKaklas {
             }
             phase = .intro
             phaseStart = now
-            introProgress = 0
             repIndex = 0
             lastSide = nil
             valueNorm = 0
@@ -194,21 +204,28 @@ extension LaisvasKaklas {
             stillDeviation = 0
             holdProgress = 0
             isHolding = false
+            readyRequested = false
+            waitingForReady = false
 
             switch ex.kind {
             case .reach, .stretch:
-                step = .approach
+                setStage(.approach, now)
                 if ex.alternateSides {
                     expectedSide = lastSide.map { -$0 }
                 } else {
                     expectedSide = 1
                 }
                 targetSides = expectedSide.map { [$0] } ?? [1, -1]
+                // Pasukus galvą ekrano nesimato – ką daryti, pasakom balsu.
+                announce(expectedSide.map { sideName(ex, $0) } ?? "Pradėk į bet kurią pusę")
             case .isometric:
-                step = .prepare
+                setStage(.prepare, now)
+                waitingForReady = true
                 targetSides = []
+                let direction = ex.cues.isEmpty ? "" : ex.cues[repIndex % ex.cues.count]
+                announce(direction)
             case .rhythm:
-                step = .rhythm
+                setStage(.rhythm, now)
                 targetSides = []
             }
         }
@@ -293,7 +310,7 @@ extension LaisvasKaklas {
                 }
             }
 
-            switch step {
+            switch stage {
             case .approach:
                 isHolding = false
                 if lockedSide == nil {
@@ -329,13 +346,14 @@ extension LaisvasKaklas {
                         repScore = 0.6
                         warn("Lėčiau – judėk ramiai ir sklandžiai", now: now)
                     }
-                    step = .hold
+                    setStage(.hold, now)
                     holdAccum = 0
+                    announce(ex.kind == .stretch ? "Gerai. Kvėpuok ramiai" : "Gerai. Laikyk")
                 }
 
             case .hold:
                 guard let side = lockedSide else {
-                    step = .approach
+                    setStage(.approach, now)
                     return
                 }
                 let p = v * Double(side) / targetMagnitude(ex, side: side)
@@ -344,19 +362,20 @@ extension LaisvasKaklas {
                     holdAccum += dt
                 }
                 if p < 0.45 {
-                    step = .approach
+                    setStage(.approach, now)
                     holdAccum = 0
                     moveStart = now
-                    warn("Grįžk iki šviesos ir išlaikyk", now: now)
+                    warn("Grįžk iki kontūro ir išlaikyk", now: now)
                 }
                 holdProgress = min(1, holdAccum / ex.holdSeconds)
                 let remaining = max(0, Int((ex.holdSeconds - holdAccum).rounded(.up)))
                 cue = ex.kind == .stretch ? breathing(now) : "Išlaikyk… \(remaining)"
                 if holdAccum >= ex.holdSeconds {
-                    step = .returning
+                    setStage(.returning, now)
                     holdProgress = 1
                     isHolding = false
                     cue = "Lėtai grįžk į centrą"
+                    announce("Grįžk į centrą")
                 }
 
             case .returning:
@@ -367,7 +386,7 @@ extension LaisvasKaklas {
                 }
 
             default:
-                step = .approach
+                setStage(.approach, now)
             }
         }
 
@@ -384,16 +403,19 @@ extension LaisvasKaklas {
             let t = now - stepStart
             let s = Double(side)
             if t < move {
+                setStage(.approach, now)
                 isHolding = false
                 valueNorm = s * t / move
                 holdProgress = 0
                 cue = sideName(ex, side)
             } else if t < move + hold {
+                setStage(.hold, now)
                 isHolding = true
                 valueNorm = s
                 holdProgress = (t - move) / hold
                 cue = ex.kind == .stretch ? breathing(now) : "Išlaikyk… \(max(1, Int((move + hold - t).rounded(.up))))"
             } else if t < move * 2 + hold {
+                setStage(.returning, now)
                 isHolding = false
                 valueNorm = s * (1 - (t - move - hold) / move)
                 holdProgress = 1
@@ -410,16 +432,20 @@ extension LaisvasKaklas {
             let direction = ex.cues.isEmpty ? "" : ex.cues[repIndex % ex.cues.count]
             let t = now - stepStart
             valueNorm = 0
-            switch step {
+            switch stage {
             case .prepare:
+                // Laukiam, kol uždėsi delną ir paspausi „Delnas vietoje“ – laikmatis neskubina.
                 isHolding = false
                 holdProgress = 0
-                cue = "Pasiruošk: \(direction)"
-                if t >= 2.5 {
-                    step = .press
+                cue = direction
+                if readyRequested {
+                    readyRequested = false
+                    waitingForReady = false
+                    setStage(.press, now)
                     stepStart = now
                     baseline = reading
                     maxDeviation = 0
+                    announce("Spausk švelniai")
                 }
             case .press:
                 isHolding = true
@@ -447,9 +473,10 @@ extension LaisvasKaklas {
                         repScore = 0.4
                         warn("Spausk švelniau – galva turi likti vietoje", now: now)
                     }
-                    step = .rest
+                    setStage(.rest, now)
                     stepStart = now
                     isHolding = false
+                    announce("Atpalaiduok")
                 }
             case .rest:
                 holdProgress = 0
@@ -459,7 +486,7 @@ extension LaisvasKaklas {
                     completeRep(now)
                 }
             default:
-                step = .prepare
+                setStage(.prepare, now)
                 stepStart = now
             }
         }
@@ -475,7 +502,10 @@ extension LaisvasKaklas {
             valueNorm = sin(fraction * .pi) * 0.6
             if !ex.cues.isEmpty {
                 let i = min(ex.cues.count - 1, Int(fraction * Double(ex.cues.count)))
-                cue = ex.cues[i]
+                if cue != ex.cues[i] {
+                    cue = ex.cues[i]
+                    announce(shortCue(cue))
+                }
             }
             if t >= duration {
                 completeRep(now)
@@ -484,10 +514,21 @@ extension LaisvasKaklas {
 
         // MARK: - Pagalbinės
 
+        /// „Kelk pečius – …“ → „Kelk pečius“ (balsui – trumpai).
+        private func shortCue(_ text: String) -> String {
+            (text.split(separator: "–").first.map(String.init) ?? text).trimmingCharacters(in: .whitespaces)
+        }
+
         /// 4 s įkvėpimas, 6 s iškvėpimas – ramus kvėpavimas tempimo metu.
         private func breathing(_ now: Double) -> String {
             let c = (now - stepStart).truncatingRemainder(dividingBy: 10)
             return c < 4 ? "Įkvėpk…" : "Lėtai iškvėpk ir atsipalaiduok"
+        }
+
+        private func setStage(_ next: RepStage, _ now: Double) {
+            guard next != stage else { return }
+            stage = next
+            stageStart = now
         }
 
         private func warn(_ text: String, now: Double, seconds: Double = 2.2) {
