@@ -845,7 +845,17 @@ button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
       addEventListener('devicemotion', onMotion);
     } catch {}
     clearTimeout(tiltTimer);
-    tiltTimer = setTimeout(() => { if (!input.tiltLive) $('tiltHint').hidden = false; }, 1500);
+    tiltTimer = setTimeout(() => {
+      if (input.tiltLive) return;
+      // Polinkis čia nepasiekiamas (pvz. claude.ai nuorodoje ar neleista) – iškart pereinam prie lietimo, kad mašina valdytųsi.
+      $('tiltHint').hidden = false;
+      settings.control = 'touch'; save();
+      if (S.mode === 'play' || S.mode === 'countdown') {
+        showBanner('VAIRUOK LIESDAMAS', 'laikyk kairę ar dešinę ekrano pusę', 3);
+        $('steerHint').style.opacity = 1;
+        setTimeout(() => { $('steerHint').style.opacity = 0; }, 4000);
+      }
+    }, 1500);
   }
 
   // ---------- Garsas (WebAudio, įjungiamas tik paspaudus) ----------
