@@ -10,7 +10,8 @@ extension NaktinisGreitkelis {
         let onPause: () -> Void
 
         var body: some View {
-            TimelineView(.animation) { _ in
+            // Skaičiams užtenka ~20 atnaujinimų per sekundę; kas kadrą perpiešiamas HUD stabdė žaidimą.
+            TimelineView(.periodic(from: .now, by: 1.0 / 20.0)) { _ in
                 content
             }
         }
@@ -110,7 +111,8 @@ extension NaktinisGreitkelis {
             content()
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(.ultraThinMaterial.opacity(0.6), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                // Ne `.ultraThinMaterial`: suliejimas virš kas kadrą kintančio vaizdo labai brangus.
+                .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(.white.opacity(0.14), lineWidth: 1))
                 .environment(\.colorScheme, .dark)
         }

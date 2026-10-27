@@ -46,7 +46,7 @@ extension ParkavimoMeistras {
         var body: some View {
             GeometryReader { geo in
                 let vp = viewport(geo.size)
-                TimelineView(.animation(minimumInterval: nil, paused: result != nil)) { tl in
+                TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: result != nil)) { tl in
                     let snap = advanceFrame(tl.date)
                     ZStack(alignment: .top) {
                         Canvas { ctx, _ in
@@ -58,6 +58,8 @@ extension ParkavimoMeistras {
                             c.scaleBy(x: vp.s, y: vp.s)
                             Art.world(c, sim: sim, scenery: scenery, time: sim.clock)
                         }
+                        // Piešiama vaizdo plokšte (Metal), ne procesoriumi.
+                        .drawingGroup()
 
                         hud(snap)
 
@@ -157,7 +159,7 @@ extension ParkavimoMeistras {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 15, weight: .bold))
                         .frame(width: 40, height: 40)
-                        .background(.ultraThinMaterial, in: SwiftUI.Circle())
+                        .background(Color.black.opacity(0.45), in: SwiftUI.Circle())
                 }
                 .accessibilityLabel("Atgal į meniu")
 
@@ -188,7 +190,7 @@ extension ParkavimoMeistras {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 15, weight: .bold))
                         .frame(width: 40, height: 40)
-                        .background(.ultraThinMaterial, in: SwiftUI.Circle())
+                        .background(Color.black.opacity(0.45), in: SwiftUI.Circle())
                 }
                 .accessibilityLabel("Pradėti iš naujo")
             }
@@ -214,7 +216,7 @@ extension ParkavimoMeistras {
                 }
                 .padding(16)
                 .frame(maxWidth: 340)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(.horizontal, 24)
                 .allowsHitTesting(false)
                 .transition(.opacity)

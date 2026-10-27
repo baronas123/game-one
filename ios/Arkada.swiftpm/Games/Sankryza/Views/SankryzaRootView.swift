@@ -50,11 +50,13 @@ extension Sankryza {
                 ZStack {
                     GeometryReader { geo in
                         ZStack(alignment: .topLeading) {
-                            TimelineView(.animation) { timeline in
+                            TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
                                 Canvas { ctx, _ in
                                     Renderer.draw(ctx, sim: sim, time: timeline.date.timeIntervalSinceReferenceDate,
                                                   parallax: parallax, reducedMotion: reduceMotion)
                                 }
+                                // Piešiama vaizdo plokšte (Metal), ne procesoriumi.
+                                .drawingGroup()
                                 .onChange(of: timeline.date) { _, now in tick(now) }
                             }
                             .contentShape(Rectangle())

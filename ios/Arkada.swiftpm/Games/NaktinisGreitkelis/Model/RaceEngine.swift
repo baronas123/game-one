@@ -159,13 +159,20 @@ extension NaktinisGreitkelis {
         // MARK: - Ciklas
 
         func tick(_ date: Date) {
-            let dt = min(0.05, lastDate.map { date.timeIntervalSince($0) } ?? 0)
+            // Iki 0,1 s: net kai kadrų mažiau, žaidimas juda realiu laiku (ne sulėtintai).
+            let dt = min(0.1, lastDate.map { date.timeIntervalSince($0) } ?? 0)
             lastDate = date
             guard dt > 0, mode != .paused else { return }
-            if mode == .menu || mode == .over {
-                demo(dt)
-            } else {
-                update(dt)
+            // Smulkūs žingsniai (≤ 1/60 s): lėtesniuose kadruose mašinos neprašoka viena pro kitą.
+            var remaining = dt
+            while remaining > 1e-6 {
+                let h = min(remaining, 1.0 / 60.0)
+                remaining -= h
+                if mode == .menu || mode == .over {
+                    demo(h)
+                } else if mode != .paused {
+                    update(h)
+                }
             }
         }
 

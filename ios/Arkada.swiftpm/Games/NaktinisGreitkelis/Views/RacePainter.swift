@@ -4,7 +4,7 @@ extension NaktinisGreitkelis {
 
     /// Piešia visą sceną į SwiftUI `Canvas` (pseudo-3D kelias, objektai, mašinos, efektai).
     enum RacePainter {
-        static let drawDistance = 170
+        static let drawDistance = 120
 
         private struct Projected {
             var x1: CGFloat, y1: CGFloat, w1: CGFloat, s1: CGFloat

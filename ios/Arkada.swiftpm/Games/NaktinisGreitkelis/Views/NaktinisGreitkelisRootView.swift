@@ -30,11 +30,14 @@ extension NaktinisGreitkelis {
         var body: some View {
             ZStack {
                 GeometryReader { geo in
-                    TimelineView(.animation(minimumInterval: nil, paused: phase == .paused)) { timeline in
+                    // 60 kadrų/s užtenka (ProMotion telefonai kitaip piešia 120 k/s – dvigubas darbas).
+                    TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: phase == .paused)) { timeline in
                         let _ = step(timeline.date, size: geo.size)
                         Canvas { ctx, size in
                             RacePainter.draw(engine, backdrop: backdrop, in: &ctx, size: size)
                         }
+                        // Piešiama vaizdo plokšte (Metal), ne procesoriumi – kitaip kadrai stringa.
+                        .drawingGroup()
                     }
                     .contentShape(Rectangle())
                     .gesture(steerGesture(width: geo.size.width))
