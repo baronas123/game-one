@@ -15,6 +15,7 @@ Arkada – žaidimų platforma.
   `GameStorage` (ne tiesiogiai `UserDefaults`), `Haptics`, `ArcadeButtonStyle`, `GameCloseButton`.
 - Žaidimo `id` nekeičiamas, nes nuo jo priklauso išsaugotas progresas.
 - Žaidimo logika – `Model/` (be SwiftUI), vaizdai – `Views/`.
+- Failų vardai visame modulyje unikalūs: bendrus vardus rašyk su priešdėliu (`Views/<Vardas>RootView.swift`).
 - UI tekstai lietuviški; skaičiai su dešimtainiu kableliu (`Double.lt()`).
 - Swift 5 kalbos režimas (`swift-tools-version: 5.9`). `@MainActor` žymėjimų venk, kad kodas
   kompiliuotųsi ir Xcode 15, ir Xcode 16.

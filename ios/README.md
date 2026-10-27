@@ -60,7 +60,7 @@ Skriptas:
 3. įrašo žaidimą į `Core/GameRegistry.swift`, ir jis iškart atsiranda Arkados meniu.
 
 Šablone yra veikiantis mini žaidimas, kuris parodo, kaip naudoti `Core`. Jį gali iškart paleisti,
-o tada perrašyti `Views/RootView.swift` savo žaidimu.
+o tada perrašyti `Views/<Vardas>RootView.swift` savo žaidimu.
 
 ## Taisyklės (kad žaidimai netrukdytų vienas kitam)
 
@@ -74,6 +74,8 @@ o tada perrašyti `Views/RootView.swift` savo žaidimu.
    Taip logiką lengva testuoti ir perkelti.
 5. **Lietuviška sąsaja.** Tekstai lietuviški, skaičiai su kableliu (`12,25`), tam yra `Double.lt()`.
 6. **Bendras kodas – į `Core/`.** Jei tas pats dalykas reikalingas dviem žaidimams, perkelk jį į `Core/`.
+7. **Unikalūs failų vardai.** Viename modulyje du failai negali vadintis vienodai (pvz. du `RootView.swift`),
+   todėl bendrus vardus rašyk su žaidimo priešdėliu: `Views/<Vardas>RootView.swift`.
 
 ## Ką galima pridėti vėliau
 

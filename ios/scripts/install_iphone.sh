@@ -3,6 +3,7 @@
 #
 #   ios/scripts/install_iphone.sh            # į prijungtą iPhone
 #   ios/scripts/install_iphone.sh --sim      # tik patikrinti, ar kompiliuojasi (simuliatoriui, be parašo)
+#   ios/scripts/install_iphone.sh --only laisvas-kaklas   # meniu – tik vienas žaidimas (pagal jo id)
 #
 # Reikia: Mac su Xcode (prisijungta prie Apple ID: Xcode → Settings → Accounts) ir
 # iPhone su įjungtu Kūrėjo režimu. XcodeGen įdiegiamas automatiškai per Homebrew.
@@ -13,6 +14,17 @@ IOS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DD="$IOS_DIR/build/DerivedData"
 BUNDLE_ID="lt.barons.arkada"
 cd "$IOS_DIR"
+
+SIM=0
+ONLY=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --sim) SIM=1 ;;
+    --only) ONLY="${2:-}"; shift ;;
+    *) printf '\n✗ Nežinomas argumentas: %s\n' "$1" >&2; exit 1 ;;
+  esac
+  shift
+done
 
 say() { printf '\n▶ %s\n' "$*"; }
 die() { printf '\n✗ %s\n' "$*" >&2; exit 1; }
@@ -27,11 +39,16 @@ fi
 say "Generuojamas Arkada.xcodeproj…"
 xcodegen generate --quiet
 
-if [[ "${1:-}" == "--sim" ]]; then
+if [[ -n "$ONLY" ]]; then
+  grep -rq "static let id = \"$ONLY\"" Arkada.swiftpm/Games || die "Nėra žaidimo su id „${ONLY}“."
+  say "Meniu – tik žaidimas „${ONLY}“."
+fi
+
+if [[ $SIM -eq 1 ]]; then
   say "Kompiliuojama simuliatoriui (patikra)…"
   xcodebuild -project Arkada.xcodeproj -scheme Arkada -configuration Debug \
     -destination 'generic/platform=iOS Simulator' -derivedDataPath "$DD" \
-    CODE_SIGNING_ALLOWED=NO build
+    ARKADA_ONLY_GAME="$ONLY" CODE_SIGNING_ALLOWED=NO build
   say "✓ Kompiliuojasi."
   exit 0
 fi
@@ -66,7 +83,9 @@ except Exception:
 def ok(d):
     hw = d.get("hardwareProperties", {})
     cp = d.get("connectionProperties", {})
-    return hw.get("platform") == "iOS" and hw.get("deviceType") == "iPhone" and cp.get("pairingState") == "paired"
+    # Simuliatoriai irgi „paired“, todėl tikriname, kad įrenginys fizinis.
+    return (hw.get("platform") == "iOS" and hw.get("deviceType") == "iPhone"
+            and hw.get("reality") == "physical" and cp.get("pairingState") == "paired")
 for d in sorted(devs, key=lambda d: d.get("connectionProperties", {}).get("transportType") != "wired"):
     if ok(d):
         print(d["identifier"]); break
@@ -80,7 +99,7 @@ say "Kompiliuojama ir pasirašoma (pirmą kartą gali užtrukti)…"
 xcodebuild -project Arkada.xcodeproj -scheme Arkada -configuration Debug \
   -destination 'generic/platform=iOS' -derivedDataPath "$DD" \
   -allowProvisioningUpdates \
-  DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic \
+  DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic ARKADA_ONLY_GAME="$ONLY" \
   build
 APP="$DD/Build/Products/Debug-iphoneos/Arkada.app"
 [[ -d "$APP" ]] || die "Nerastas sukompiliuotas $APP"

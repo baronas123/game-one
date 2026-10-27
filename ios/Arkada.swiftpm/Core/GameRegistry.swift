@@ -29,8 +29,15 @@ struct GameInfo: Identifiable {
 }
 
 enum GameRegistry {
-    /// Visi Arkados žaidimai, rodomi meniu šia tvarka.
-    static let all: [GameInfo] = [
+    /// Meniu rodomi žaidimai. `install_iphone.sh --only <id>` palieka tik vieną (Info.plist `ArkadaOnlyGame`).
+    static let all: [GameInfo] = {
+        guard let only = Bundle.main.object(forInfoDictionaryKey: "ArkadaOnlyGame") as? String,
+              !only.isEmpty else { return registered }
+        return registered.filter { $0.id == only }
+    }()
+
+    /// Visi Arkados žaidimai šia tvarka.
+    private static let registered: [GameInfo] = [
         PlanuMeistras.info,
         NaktinisGreitkelis.info,
         Sankryza.info,

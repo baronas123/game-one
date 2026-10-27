@@ -33,6 +33,7 @@ targets:
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait]
         NSCameraUsageDescription: "Kamera naudojama žaidimuose, pvz. tavo veidas galinio vaizdo veidrodėlyje ir galvos judesių sekimas mankštoje. Vaizdas apdorojamas tik telefone, niekur nesiunčiamas ir neįrašomas."
         ITSAppUsesNonExemptEncryption: false
+        ArkadaOnlyGame: "$(ARKADA_ONLY_GAME)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
     settings:
@@ -41,3 +42,4 @@ targets:
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_PREVIEWS: YES
+        ARKADA_ONLY_GAME: ""
