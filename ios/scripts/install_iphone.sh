@@ -105,13 +105,14 @@ rm -f "$DEV_JSON"
 [[ -n "$DEVICE_ID" ]] || die "Neradau iPhone. Prijunk laidu, atrakink, paspausk „Pasitikėti“ ir įjunk Nustatymai → Privatumas ir saugumas → Kūrėjo režimas."
 
 # --- Kompiliavimas ir pasirašymas ---
+# Release – su Swift optimizacijomis: Debug režimu žaidimų piešimas (Canvas kas kadrą) gerokai lėtesnis.
 say "Kompiliuojama ir pasirašoma (pirmą kartą gali užtrukti)…"
-xcodebuild -project Arkada.xcodeproj -scheme "$TARGET" -configuration Debug \
+xcodebuild -project Arkada.xcodeproj -scheme "$TARGET" -configuration Release \
   -destination 'generic/platform=iOS' -derivedDataPath "$DD" \
   -allowProvisioningUpdates \
   DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic ARKADA_ONLY_GAME="$ONLY" \
   build
-APP="$DD/Build/Products/Debug-iphoneos/$TARGET.app"
+APP="$DD/Build/Products/Release-iphoneos/$TARGET.app"
 [[ -d "$APP" ]] || die "Nerastas sukompiliuotas $APP"
 
 # --- Įdiegimas ir paleidimas ---
